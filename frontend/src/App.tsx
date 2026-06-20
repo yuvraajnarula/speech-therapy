@@ -29,6 +29,7 @@ export default function App() {
 
   const {
     isListening,
+    isProcessing,
     diagnostic,
     startStreaming,
     stopStreaming,
@@ -108,13 +109,18 @@ export default function App() {
         </div>
       )}
 
-      {!isListening ? (
-        <button onClick={startStreaming}>
+      {!isListening && !isProcessing ? (
+        <button 
+          onClick={startStreaming} 
+        >
           Start Speaking "{targetText}"
         </button>
       ) : (
-        <button onClick={stopStreaming}>
-          Stop & Analyze
+        <button 
+          onClick={stopStreaming} 
+          disabled={!isListening || isProcessing} 
+        >
+          {isProcessing ? 'Agent Thinking...' : 'Stop & Analyze'}
         </button>
       )}
     </div>

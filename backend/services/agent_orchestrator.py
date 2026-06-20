@@ -6,6 +6,7 @@ import traceback
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket
+from starlette.websockets import WebSocketDisconnect 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 import uvicorn
@@ -27,7 +28,6 @@ server_params = StdioServerParameters(
     command=sys.executable,
     args=[str(mcp_server_path)],
 )
-
 
 @app.websocket("/ws/agent-therapy")
 async def agent_websocket(websocket: WebSocket):
@@ -60,11 +60,9 @@ async def agent_websocket(websocket: WebSocket):
                         async with stdio_client(server_params) as (read, write):
                             async with ClientSession(read, write) as session:
                                 await websocket.send_text("MCP connected")
-
                                 await session.initialize()
 
                                 await websocket.send_text("Transcribing")
-
                                 transcript = await session.call_tool(
                                     "transcribe_audio",
                                     {"audio_bytes_base64": audio_b64},
@@ -74,13 +72,9 @@ async def agent_websocket(websocket: WebSocket):
                                 await websocket.send_text(f"Transcript: {spoken_text}")
 
                                 await websocket.send_text("Analyzing")
-
                                 result = await session.call_tool(
                                     "evaluate_english_phonetics",
-                                    {
-                                        "target_word": target_text,
-                                        "spoken_text": spoken_text,
-                                    },
+                                    {"target_word": target_text, "spoken_text": spoken_text},
                                 )
 
                                 raw = result.content[0].text
@@ -99,27 +93,33 @@ async def agent_websocket(websocket: WebSocket):
                                     },
                                 )
 
-                                await websocket.send_json(
-                                    {
-                                        "type": "diagnostic",
-                                        "target": target_text,
-                                        "spoken": spoken_text,
-                                        **data,
-                                    }
-                                )
+                                await websocket.send_json({
+                                    "type": "diagnostic",
+                                    "target": target_text,
+                                    "spoken": spoken_text,
+                                    **data,
+                                })
 
                     except Exception as e:
                         traceback.print_exc()
-                        await websocket.send_text(f"Error: {str(e)}")
+                        try:
+                            await websocket.send_text(f"Error: {str(e)}")
+                        except Exception:
+                            pass 
 
                     audio_buffer.clear()
 
             elif message.get("bytes"):
                 audio_buffer.extend(message["bytes"])
 
+    except WebSocketDisconnect:
+        print("Client disconnected gracefully.")
     except Exception as e:
-        traceback.print_exc()
-
+        print(f"WebSocket Error: {e}")
+        try:
+            await websocket.send_text(f"Error: {str(e)}")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

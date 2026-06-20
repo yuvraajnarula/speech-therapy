@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 
 export interface DiagnosticResult {
-  type: string; 
+  type: string;
   target: string;
   spoken: string;
   target_phonemes: string;
   spoken_phonemes: string;
   is_correct: boolean;
-  target_achieved: boolean; 
-  errors: {
-    type: string;
-    target_slice: string;
-    spoken_slice: string;
-  }[];
+  target_achieved: boolean;
+  errors: { type: string; target_slice: string; spoken_slice: string; }[];
 }
 
 const floatTo16BitPCM = (float32array: Float32Array) => {
@@ -26,53 +22,71 @@ const floatTo16BitPCM = (float32array: Float32Array) => {
 
 export function useAudioStreamer(targetText: string) {
   const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); 
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
-  const [agentStatus, setAgentStatus] = useState<string>(""); 
+  const [agentStatus, setAgentStatus] = useState<string>("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const closeWebSocket = () => {
+    if (wsRef.current) {
+      wsRef.current.onclose = null; 
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  };
+
   const startStreaming = async () => {
+    closeWebSocket();
+
     try {
       setDiagnostic(null);
       setAgentStatus("Connecting to Agent...");
+      setIsProcessing(false);
       
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       });
       streamRef.current = stream;
 
-      wsRef.current = new WebSocket("ws://localhost:8000/ws/agent-therapy");
-      wsRef.current.binaryType = "arraybuffer";
+      const ws = new WebSocket("ws://localhost:8000/ws/agent-therapy");
+      ws.binaryType = "arraybuffer";
+      wsRef.current = ws;
 
-      wsRef.current.onopen = () => {
+      ws.onopen = () => {
         console.log("WebSocket connected to Agent");
-        wsRef.current?.send(JSON.stringify({ action: "set_target", target: targetText }));
+        ws.send(JSON.stringify({ action: "set_target", target: targetText }));
       };
 
-      wsRef.current.onmessage = (event) => {
-        console.log("RAW WS DATA:", event.data);
-        
+      ws.onmessage = (event) => {
         if (typeof event.data === 'string' && !event.data.trim().startsWith('{')) {
-          console.log(" Agent Status:", event.data);
           setAgentStatus(event.data);
           return; 
         }
 
         try {
           const data: DiagnosticResult = JSON.parse(event.data);
-          
           if (data.type === 'diagnostic') { 
-            console.log("Final Diagnostic Received:", data);
-            setAgentStatus("Analysis complete!");
             setDiagnostic(data);
-            wsRef.current?.close();
-            wsRef.current = null;
+            setAgentStatus("Analysis complete!");
+            setIsProcessing(false);
+            closeWebSocket(); // Safely close now that we have the result
           }
         } catch (err) {
           console.error("Error parsing websocket JSON:", err);
+        }
+      };
+
+      ws.onerror = (err) => console.error("WebSocket error:", err);
+      
+      ws.onclose = () => {
+        console.log("WebSocket closed");
+        if (isProcessing) {
+          setIsProcessing(false);
+          setAgentStatus("Connection lost.");
         }
       };
 
@@ -85,10 +99,10 @@ export function useAudioStreamer(targetText: string) {
       processRef.current = processor;
 
       processor.onaudioprocess = (e) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
+        if (ws.readyState === WebSocket.OPEN) {
           const float32Data = e.inputBuffer.getChannelData(0);
           const pcm16Data = floatTo16BitPCM(float32Data);
-          wsRef.current.send(pcm16Data);
+          ws.send(pcm16Data);
         }
       };
 
@@ -111,17 +125,27 @@ export function useAudioStreamer(targetText: string) {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ action: "stop" }));
       setAgentStatus("Processing audio...");
+      setIsProcessing(true); // 🚨 LOCK THE UI
     }
+    
     setIsListening(false);
   };
 
   useEffect(() => {
     return () => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.close();
-      }
+      processRef.current?.disconnect();
+      audioContextRef.current?.close();
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      closeWebSocket();
     };
   }, []);
 
-  return { isListening, diagnostic, agentStatus, startStreaming, stopStreaming };
+  return { 
+    isListening, 
+    isProcessing, 
+    diagnostic, 
+    agentStatus, 
+    startStreaming, 
+    stopStreaming 
+  };
 }

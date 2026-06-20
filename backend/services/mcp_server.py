@@ -143,37 +143,62 @@ def log_session_for_finetuning(audio_bytes_base64: str, target_text: str, spoken
         with open("whisper_train.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(whisper_entry) + "\n")
             
+
         target_phonemes = diag_dict.get('target_phonemes', '')
         spoken_phonemes = diag_dict.get('spoken_phonemes', '')
         errors = diag_dict.get('errors', [])
+        target_achieved = diag_dict.get('target_achieved', False)
         
-        if not errors:
-            sft_output = "Perfect pronunciation! The child successfully produced all target phonemes. No therapy intervention needed for this word."
+        target_len = len(target_phonemes)
+        spoken_len = len(spoken_phonemes)
+        
+        
+        if spoken_len > (target_len * 3) and not target_achieved:
+            sft_output = (
+                "Clinical Observation: The child did not attempt the target phrase. "
+                "The spoken output deviates significantly from the target, indicating "
+                "potential inattention or task avoidance rather than a phonetic articulation error.\n\n"
+                "Actionable Therapy Feedback:\n"
+                "1. Regain the child's attention using visual or tactile cues before prompting.\n"
+                "2. Reduce the cognitive load by breaking the task into smaller, single-syllable targets.\n"
+                "3. Use positive reinforcement when the child successfully attends to the prompt."
+            )
+            
+        elif not errors and target_achieved:
+            sft_output = (
+                "Clinical Observation: Perfect pronunciation! The child successfully produced "
+                "all target phonemes with accurate articulation.\n\n"
+                "Actionable Therapy Feedback:\n"
+                "1. Maintain current trajectory.\n"
+                "2. Increase complexity by introducing the target word into short phrases or sentences."
+            )
+            
         else:
-            report_lines = ["Diagnostic Analysis:"]
+            report_lines = ["Clinical Observation:"]
             for err in errors:
                 err_type = err.get('type')
                 target_slice = err.get('target_slice', '')
                 spoken_slice = err.get('spoken_slice', '')
                 
+                # Prevent context window spam by truncating massive phoneme blocks
+                if len(spoken_slice) > 10: spoken_slice = spoken_slice[:10] + "..."
+                if len(target_slice) > 10: target_slice = target_slice[:10] + "..."
+                    
                 if err_type == 'replace':
                     report_lines.append(f"- Substitution Error: The child substituted the sound /{target_slice}/ with /{spoken_slice}/.")
                 elif err_type == 'delete':
                     report_lines.append(f"- Omission Error: The child completely omitted the sound /{target_slice}/.")
                 elif err_type == 'insert':
-                    if spoken_slice:
-                        report_lines.append(f"- Insertion Error: The child added extra sounds /{spoken_slice}/.")
-                    else:
-                        report_lines.append(f"- Insertion Error: The child added extra phonetic material.")
-                        
+                    report_lines.append(f"- Insertion Error: The child added extraneous phonetic material /{spoken_slice}/.")
+                    
             report_lines.append("\nActionable Therapy Feedback:")
-            report_lines.append("1. Use a mirror to provide visual feedback on tongue and lip placement.")
-            report_lines.append("2. Practice the specific missing or substituted sound in isolation.")
+            report_lines.append("1. Use a mirror to provide visual feedback on tongue and lip placement for the specific error sounds.")
+            report_lines.append("2. Practice the specific missing or substituted sound in isolation (e.g., /k/, /g/).")
             report_lines.append("3. Once mastered in isolation, blend the sound back into the target word slowly.")
             sft_output = "\n".join(report_lines)
             
         sarvam_entry = {
-            "instruction": "You are an expert pediatric speech therapist. Analyze the child's spoken phrase against the target phrase. Identify phonetic errors (insertions, deletions, substitutions) and provide actionable therapy feedback.",
+            "instruction": "You are an expert pediatric speech therapist. Analyze the child's spoken phrase against the target phrase. Identify phonetic errors (insertions, deletions, substitutions) or behavioral deviations, and provide actionable therapy feedback.",
             "input": f"Target Phrase: {target_text}\nChild's Spoken Phrase: {spoken_text}\nTarget Phonemes: {target_phonemes}\nChild Phonemes: {spoken_phonemes}",
             "output": sft_output
         }
@@ -181,12 +206,10 @@ def log_session_for_finetuning(audio_bytes_base64: str, target_text: str, spoken
         with open("sarvam_train.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(sarvam_entry) + "\n")
             
-        return f"High-quality SFT data generated! Saved audio to {audio_path}."
+        return f"Enterprise SFT data generated! Saved audio to {audio_path}."
         
     except Exception as e:
         return f"Error logging data: {str(e)}"
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
-    
-# demo
