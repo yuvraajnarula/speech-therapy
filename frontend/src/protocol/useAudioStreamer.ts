@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export interface DiagnosticResult {
+  type: string; 
   target: string;
   spoken: string;
   target_phonemes: string;
@@ -26,6 +27,7 @@ const floatTo16BitPCM = (float32array: Float32Array) => {
 export function useAudioStreamer(targetText: string) {
   const [isListening, setIsListening] = useState(false);
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
+  const [agentStatus, setAgentStatus] = useState<string>(""); 
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -35,32 +37,42 @@ export function useAudioStreamer(targetText: string) {
   const startStreaming = async () => {
     try {
       setDiagnostic(null);
+      setAgentStatus("Connecting to Agent...");
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       });
       streamRef.current = stream;
 
-      wsRef.current = new WebSocket("ws://localhost:8000/ws/local-therapy");
+      wsRef.current = new WebSocket("ws://localhost:8000/ws/agent-therapy");
       wsRef.current.binaryType = "arraybuffer";
 
       wsRef.current.onopen = () => {
-        console.log("WebSocket connected");
+        console.log("WebSocket connected to Agent");
         wsRef.current?.send(JSON.stringify({ action: "set_target", target: targetText }));
       };
 
       wsRef.current.onmessage = (event) => {
         console.log("RAW WS DATA:", event.data);
+        
+        if (typeof event.data === 'string' && !event.data.trim().startsWith('{')) {
+          console.log(" Agent Status:", event.data);
+          setAgentStatus(event.data);
+          return; 
+        }
+
         try {
           const data: DiagnosticResult = JSON.parse(event.data);
           
-          if (data.target !== undefined) { 
-            console.log("PARSED DIAGNOSTIC:", data);
+          if (data.type === 'diagnostic') { 
+            console.log("Final Diagnostic Received:", data);
+            setAgentStatus("Analysis complete!");
             setDiagnostic(data);
             wsRef.current?.close();
             wsRef.current = null;
           }
         } catch (err) {
-          console.error("Error parsing websocket message:", err);
+          console.error("Error parsing websocket JSON:", err);
         }
       };
 
@@ -98,6 +110,7 @@ export function useAudioStreamer(targetText: string) {
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ action: "stop" }));
+      setAgentStatus("Processing audio...");
     }
     setIsListening(false);
   };
@@ -110,5 +123,5 @@ export function useAudioStreamer(targetText: string) {
     };
   }, []);
 
-  return { isListening, diagnostic, startStreaming, stopStreaming };
+  return { isListening, diagnostic, agentStatus, startStreaming, stopStreaming };
 }
