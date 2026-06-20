@@ -1,44 +1,122 @@
+import { useState } from "react";
 import { useAudioStreamer } from "./protocol/useAudioStreamer";
 
-export default function App(){
+const phonemeGuide: Record<string, string> = {
+  HH: "H (breath from throat)",
+  T: "T (tongue taps teeth)",
+  K: "K (back of throat)",
+  D: "D (tongue taps roof)",
+  G: "G (back of throat)",
+  P: "P (lip pop)",
+  B: "B (lip pop)",
+  S: "S (hiss snake)",
+  Z: "Z (buzz bee)",
+  AH: "a (uh)",
+  AE: "a (cat)",
+  AA: "a (father)",
+  OW: "o (go)",
+  IY: "ee (see)",
+  IH: "i (sit)",
+  L: "L (tongue up)",
+  R: "R (growl)",
+  M: "M (lips closed)",
+  N: "N (nose)",
+  W: "W (lips round)",
+};
+
+export default function App() {
+  const [targetText, setTargetText] = useState("hello");
+
   const {
     isListening,
-    transcript,
+    diagnostic,
     startStreaming,
-    stopStreaming
-  } = useAudioStreamer();
+    stopStreaming,
+  } = useAudioStreamer(targetText);
+
+  let title = "Needs Improvement";
+
+  if (diagnostic?.is_correct) {
+    title = "Correct";
+  } else if (diagnostic?.target_achieved) {
+    title = `Correct Target Word (${diagnostic.target})`;
+  }
 
   return (
-    <>
+    <div>
+      <h1>Diagnostic Engine</h1>
+
       <div>
-        <h1>
-          Audio Capture MVP
-        </h1>
-        <p>
-          Status: 
-          {
-            isListening ? ' Listening' : ' Idle'
-          }
-        </p>
-        {!isListening ? (
-          <button onClick={startStreaming}>
-            Start Listening
-          </button>
-        ) : (
-          <button onClick={stopStreaming}>
-            Stop
-          </button>
-        )}
-        {transcript && (
-          <p>
-           Transcript: {transcript}
-          </p>
-        )}
-        <p>
-        <strong>Instructions:</strong> Click "Start Speaking", allow mic permissions, and talk. 
-        Open your browser console : Press F12 for  Console tab to see the raw audio chunks being captured!
-        </p>
+        <label>Target Word: </label>
+        <input
+          type="text"
+          value={targetText}
+          onChange={(e) => setTargetText(e.target.value.toLowerCase())}
+          disabled={isListening}
+        />
       </div>
-    </>
-  )
+
+      <p>Status: {isListening ? "Listening..." : "Idle"}</p>
+
+      {diagnostic && (
+        <div>
+          <h3>{title}</h3>
+
+          <p>
+            <strong>You said:</strong> "{diagnostic.spoken}"
+          </p>
+
+          {!diagnostic.is_correct && diagnostic.errors.length > 0 && (
+            <div>
+              <h4>Feedback</h4>
+
+              <ul>
+                {diagnostic.errors.map((err, idx) => (
+                  <li key={idx}>
+                    {err.type === "replace" && (
+                      <>
+                        Replaced {err.target_slice}
+                        {phonemeGuide[err.target_slice] &&
+                          ` (${phonemeGuide[err.target_slice]})`}
+                        {" with "}
+                        {err.spoken_slice}
+                        {phonemeGuide[err.spoken_slice] &&
+                          ` (${phonemeGuide[err.spoken_slice]})`}
+                      </>
+                    )}
+
+                    {err.type === "delete" && (
+                      <>
+                        Missed sound {err.target_slice}
+                        {phonemeGuide[err.target_slice] &&
+                          ` (${phonemeGuide[err.target_slice]})`}
+                      </>
+                    )}
+
+                    {err.type === "insert" && (
+                      <>
+                        {err.spoken_slice.length > 10
+                          ? "Extra words detected."
+                          : `Extra sound detected: ${err.spoken_slice}`}
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isListening ? (
+        <button onClick={startStreaming}>
+          Start Speaking "{targetText}"
+        </button>
+      ) : (
+        <button onClick={stopStreaming}>
+          Stop & Analyze
+        </button>
+      )}
+    </div>
+  );
 }

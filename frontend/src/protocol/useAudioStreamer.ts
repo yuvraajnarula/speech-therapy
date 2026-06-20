@@ -1,19 +1,31 @@
 import { useEffect, useRef, useState } from "react";
 
+export interface DiagnosticResult {
+  target: string;
+  spoken: string;
+  target_phonemes: string;
+  spoken_phonemes: string;
+  is_correct: boolean;
+  target_achieved: boolean; 
+  errors: {
+    type: string;
+    target_slice: string;
+    spoken_slice: string;
+  }[];
+}
+
 const floatTo16BitPCM = (float32array: Float32Array) => {
   const int16Array = new Int16Array(float32array.length);
-
   for (let i = 0; i < float32array.length; i++) {
     const s = Math.max(-1, Math.min(1, float32array[i]));
     int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
   }
-
   return int16Array.buffer;
 };
 
-export function useAudioStreamer() {
+export function useAudioStreamer(targetText: string) {
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState("");
+  const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -22,37 +34,28 @@ export function useAudioStreamer() {
 
   const startStreaming = async () => {
     try {
-      // Clear previous transcript when starting a new recording
-      setTranscript("");
-
-      // Request microphone access
+      setDiagnostic(null);
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
       });
-
       streamRef.current = stream;
 
-      // Open WebSocket connection
       wsRef.current = new WebSocket("ws://localhost:8000/ws/local-therapy");
       wsRef.current.binaryType = "arraybuffer";
 
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
+        wsRef.current?.send(JSON.stringify({ action: "set_target", target: targetText }));
       };
 
       wsRef.current.onmessage = (event) => {
+        console.log("RAW WS DATA:", event.data);
         try {
-          const data = JSON.parse(event.data);
-
-          if (data.transcribed !== undefined) {
-            // 1. Update the UI with the transcript!
-            setTranscript(data.transcribed);
-
-            // 2. NOW it is safe to close the socket
+          const data: DiagnosticResult = JSON.parse(event.data);
+          
+          if (data.target !== undefined) { 
+            console.log("PARSED DIAGNOSTIC:", data);
+            setDiagnostic(data);
             wsRef.current?.close();
             wsRef.current = null;
           }
@@ -61,34 +64,12 @@ export function useAudioStreamer() {
         }
       };
 
-      wsRef.current.onerror = (err) => {
-        console.error("WebSocket error:", err);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log("WebSocket disconnected");
-      };
-
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as typeof window & {
-          webkitAudioContext?: typeof AudioContext;
-        }).webkitAudioContext;
-
-      if (!AudioContextClass) {
-        throw new Error("AudioContext is not supported in this browser.");
-      }
-
-      const audioContext = new AudioContextClass({
-        sampleRate: 16000,
-      });
-
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContextClass({ sampleRate: 16000 });
       audioContextRef.current = audioContext;
 
       const source = audioContext.createMediaStreamSource(stream);
-
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
-
       processRef.current = processor;
 
       processor.onaudioprocess = (e) => {
@@ -101,40 +82,24 @@ export function useAudioStreamer() {
 
       source.connect(processor);
       processor.connect(audioContext.destination);
-
       setIsListening(true);
-      console.log("Microphone started, speak now.");
     } catch (err) {
-      console.error("Microphone access denied or audio error:", err);
-      alert("Please allow microphone access to use this app.");
+      console.error("Microphone error:", err);
     }
   };
 
   const stopStreaming = () => {
     processRef.current?.disconnect();
     processRef.current = null;
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-
+    audioContextRef.current?.close();
+    audioContextRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
 
-    if (wsRef.current) {
-      if (wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(
-          JSON.stringify({
-            action: "stop",
-          })
-        );
-      }
-      
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ action: "stop" }));
     }
-
     setIsListening(false);
-    console.log("Stop signal sent to backend. Waiting for transcript...");
   };
 
   useEffect(() => {
@@ -142,14 +107,8 @@ export function useAudioStreamer() {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.close();
       }
-      stopStreaming();
     };
   }, []);
 
-  return {
-    isListening,
-    transcript,
-    startStreaming,
-    stopStreaming,
-  };
+  return { isListening, diagnostic, startStreaming, stopStreaming };
 }
