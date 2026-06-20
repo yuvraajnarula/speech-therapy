@@ -125,33 +125,66 @@ def analyze_indian_context(target_text: str, spoken_text: str, language_code: st
     }
     return json.dumps(result)
 
-
 @mcp.tool()
-def log_session_for_finetuning(
-    audio_bytes_base64: str,
-    target_text: str,
-    spoken_text: str,
-    diagnostic_result: str,
-) -> str:
+def log_session_for_finetuning(audio_bytes_base64: str, target_text: str, spoken_text: str, diagnostic_result: str) -> str:
     try:
+        from pathlib import Path
         diag_dict = json.loads(diagnostic_result)
-
-        entry = {
-            "audio_ref": f"audio_{hash(audio_bytes_base64)}.wav",
-            "target": target_text,
-            "spoken": spoken_text,
-            "diagnostic": diag_dict,
-            "timestamp": "2026-06-20T10:00:00Z",
+        
+        audio_dir = Path("dataset/audio")
+        audio_dir.mkdir(parents=True, exist_ok=True)
+        audio_filename = f"audio_{hash(audio_bytes_base64)}.wav"
+        audio_path = audio_dir / audio_filename
+        
+        with open(audio_path, "wb") as f:
+            f.write(base64.b64decode(audio_bytes_base64))
+            
+        whisper_entry = {"audio_filepath": str(audio_path.resolve()), "text": spoken_text}
+        with open("whisper_train.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(whisper_entry) + "\n")
+            
+        target_phonemes = diag_dict.get('target_phonemes', '')
+        spoken_phonemes = diag_dict.get('spoken_phonemes', '')
+        errors = diag_dict.get('errors', [])
+        
+        if not errors:
+            sft_output = "Perfect pronunciation! The child successfully produced all target phonemes. No therapy intervention needed for this word."
+        else:
+            report_lines = ["Diagnostic Analysis:"]
+            for err in errors:
+                err_type = err.get('type')
+                target_slice = err.get('target_slice', '')
+                spoken_slice = err.get('spoken_slice', '')
+                
+                if err_type == 'replace':
+                    report_lines.append(f"- Substitution Error: The child substituted the sound /{target_slice}/ with /{spoken_slice}/.")
+                elif err_type == 'delete':
+                    report_lines.append(f"- Omission Error: The child completely omitted the sound /{target_slice}/.")
+                elif err_type == 'insert':
+                    if spoken_slice:
+                        report_lines.append(f"- Insertion Error: The child added extra sounds /{spoken_slice}/.")
+                    else:
+                        report_lines.append(f"- Insertion Error: The child added extra phonetic material.")
+                        
+            report_lines.append("\nActionable Therapy Feedback:")
+            report_lines.append("1. Use a mirror to provide visual feedback on tongue and lip placement.")
+            report_lines.append("2. Practice the specific missing or substituted sound in isolation.")
+            report_lines.append("3. Once mastered in isolation, blend the sound back into the target word slowly.")
+            sft_output = "\n".join(report_lines)
+            
+        sarvam_entry = {
+            "instruction": "You are an expert pediatric speech therapist. Analyze the child's spoken phrase against the target phrase. Identify phonetic errors (insertions, deletions, substitutions) and provide actionable therapy feedback.",
+            "input": f"Target Phrase: {target_text}\nChild's Spoken Phrase: {spoken_text}\nTarget Phonemes: {target_phonemes}\nChild Phonemes: {spoken_phonemes}",
+            "output": sft_output
         }
-
-        with open("finetuning_dataset.jsonl", "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry) + "\n")
-
-        return "logged"
-
+        
+        with open("sarvam_train.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(sarvam_entry) + "\n")
+            
+        return f"High-quality SFT data generated! Saved audio to {audio_path}."
+        
     except Exception as e:
-        return json.dumps({"error": str(e)})
-
+        return f"Error logging data: {str(e)}"
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
