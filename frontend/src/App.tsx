@@ -3,6 +3,7 @@ import { useAudioStreamer } from "./protocol/useAudioStreamer";
 export default function App(){
   const {
     isListening,
+    transcript,
     startStreaming,
     stopStreaming
   } = useAudioStreamer();
@@ -27,6 +28,11 @@ export default function App(){
           <button onClick={stopStreaming}>
             Stop
           </button>
+        )}
+        {transcript && (
+          <p>
+           Transcript: {transcript}
+          </p>
         )}
         <p>
         <strong>Instructions:</strong> Click "Start Speaking", allow mic permissions, and talk. 
