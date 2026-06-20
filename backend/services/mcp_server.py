@@ -188,3 +188,5 @@ def log_session_for_finetuning(audio_bytes_base64: str, target_text: str, spoken
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")
+    
+# demo
