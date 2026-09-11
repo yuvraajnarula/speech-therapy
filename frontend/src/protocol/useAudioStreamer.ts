@@ -1,17 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { therapyStore, useTherapyStore, DiagnosticResult } from "../store/therapyStore";
 
-export interface DiagnosticResult {
-  type: string;
-  target: string;
-  spoken: string;
-  target_phonemes: string;
-  spoken_phonemes: string;
-  is_correct: boolean;
-  target_achieved: boolean;
-  errors: { type: string; target_slice: string; spoken_slice: string; }[];
-}
-
-const floatTo16BitPCM = (float32array: Float32Array) => {
+const floatTo16BitPCM = (float32array: Float32Array): ArrayBuffer => {
   const int16Array = new Int16Array(float32array.length);
   for (let i = 0; i < float32array.length; i++) {
     const s = Math.max(-1, Math.min(1, float32array[i]));
@@ -20,11 +10,14 @@ const floatTo16BitPCM = (float32array: Float32Array) => {
   return int16Array.buffer;
 };
 
-export function useAudioStreamer(targetText: string) {
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); 
-  const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
-  const [agentStatus, setAgentStatus] = useState<string>("");
+export function useAudioStreamer() {
+  const targetWord = useTherapyStore((s) => s.targetWord);
+  const sourceLanguage = useTherapyStore((s) => s.sourceLanguage);
+  const targetLanguage = useTherapyStore((s) => s.targetLanguage);
+  const isListening = useTherapyStore((s) => s.isListening);
+  const isProcessing = useTherapyStore((s) => s.isProcessing);
+  const diagnostic = useTherapyStore((s) => s.diagnostic);
+  const agentStatus = useTherapyStore((s) => s.agentStatus);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -33,7 +26,7 @@ export function useAudioStreamer(targetText: string) {
 
   const closeWebSocket = () => {
     if (wsRef.current) {
-      wsRef.current.onclose = null; 
+      wsRef.current.onclose = null;
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -43,50 +36,66 @@ export function useAudioStreamer(targetText: string) {
     closeWebSocket();
 
     try {
-      setDiagnostic(null);
-      setAgentStatus("Connecting to Agent...");
-      setIsProcessing(false);
-      
+      therapyStore.setDiagnostic(null);
+      therapyStore.setAgentStatus("Connecting to Live AST Engine...");
+      therapyStore.setIsProcessing(false);
+
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000,
+        },
       });
       streamRef.current = stream;
 
-      const ws = new WebSocket("ws://localhost:8000/ws/agent-therapy");
+      // Connect to WebSocket
+      const wsUrl = "ws://localhost:8000/ws/live-ast";
+      const ws = new WebSocket(wsUrl);
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log("WebSocket connected to Agent");
-        ws.send(JSON.stringify({ action: "set_target", target: targetText }));
+        therapyStore.setAgentStatus("Connected. Listening...");
+        ws.send(
+          JSON.stringify({
+            action: "configure",
+            target: targetWord,
+            source_language: sourceLanguage,
+            target_language: targetLanguage,
+          })
+        );
       };
 
       ws.onmessage = (event) => {
-        if (typeof event.data === 'string' && !event.data.trim().startsWith('{')) {
-          setAgentStatus(event.data);
-          return; 
+        if (typeof event.data === "string" && !event.data.trim().startsWith("{")) {
+          therapyStore.setAgentStatus(event.data);
+          return;
         }
 
         try {
           const data: DiagnosticResult = JSON.parse(event.data);
-          if (data.type === 'diagnostic') { 
-            setDiagnostic(data);
-            setAgentStatus("Analysis complete!");
-            setIsProcessing(false);
-            closeWebSocket(); // Safely close now that we have the result
+          if (data.type === "diagnostic") {
+            therapyStore.setDiagnostic(data);
+            therapyStore.setAgentStatus("Analysis complete!");
+            therapyStore.setIsProcessing(false);
+            closeWebSocket();
           }
         } catch (err) {
-          console.error("Error parsing websocket JSON:", err);
+          console.error("Error parsing AST response:", err);
         }
       };
 
-      ws.onerror = (err) => console.error("WebSocket error:", err);
-      
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        therapyStore.setAgentStatus("Connection error");
+      };
+
       ws.onclose = () => {
-        console.log("WebSocket closed");
-        if (isProcessing) {
-          setIsProcessing(false);
-          setAgentStatus("Connection lost.");
+        if (therapyStore.getState().isProcessing) {
+          therapyStore.setIsProcessing(false);
+          therapyStore.setAgentStatus("Connection closed.");
         }
       };
 
@@ -95,6 +104,7 @@ export function useAudioStreamer(targetText: string) {
       audioContextRef.current = audioContext;
 
       const source = audioContext.createMediaStreamSource(stream);
+      // 4096 buffer size at 16kHz = ~256ms chunk duration for optimal low latency
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       processRef.current = processor;
 
@@ -108,9 +118,10 @@ export function useAudioStreamer(targetText: string) {
 
       source.connect(processor);
       processor.connect(audioContext.destination);
-      setIsListening(true);
+      therapyStore.setIsListening(true);
     } catch (err) {
       console.error("Microphone error:", err);
+      therapyStore.setAgentStatus("Microphone access denied");
     }
   };
 
@@ -124,11 +135,11 @@ export function useAudioStreamer(targetText: string) {
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ action: "stop" }));
-      setAgentStatus("Processing audio...");
-      setIsProcessing(true); // 🚨 LOCK THE UI
+      therapyStore.setAgentStatus("Analyzing speech with faster-whisper & AST...");
+      therapyStore.setIsProcessing(true);
     }
-    
-    setIsListening(false);
+
+    therapyStore.setIsListening(false);
   };
 
   useEffect(() => {
@@ -140,12 +151,12 @@ export function useAudioStreamer(targetText: string) {
     };
   }, []);
 
-  return { 
-    isListening, 
-    isProcessing, 
-    diagnostic, 
-    agentStatus, 
-    startStreaming, 
-    stopStreaming 
+  return {
+    isListening,
+    isProcessing,
+    diagnostic,
+    agentStatus,
+    startStreaming,
+    stopStreaming,
   };
 }

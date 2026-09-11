@@ -1,128 +1,84 @@
-import { useState } from "react";
+import React from "react";
 import { useAudioStreamer } from "./protocol/useAudioStreamer";
-
-const phonemeGuide: Record<string, string> = {
-  HH: "H (breath from throat)",
-  T: "T (tongue taps teeth)",
-  K: "K (back of throat)",
-  D: "D (tongue taps roof)",
-  G: "G (back of throat)",
-  P: "P (lip pop)",
-  B: "B (lip pop)",
-  S: "S (hiss snake)",
-  Z: "Z (buzz bee)",
-  AH: "a (uh)",
-  AE: "a (cat)",
-  AA: "a (father)",
-  OW: "o (go)",
-  IY: "ee (see)",
-  IH: "i (sit)",
-  L: "L (tongue up)",
-  R: "R (growl)",
-  M: "M (lips closed)",
-  N: "N (nose)",
-  W: "W (lips round)",
-};
+import { useTherapyStore, therapyStore } from "./store/therapyStore";
+import { RoleNavbar } from "./components/RoleNavbar";
+import { AudioController } from "./components/AudioController";
+import { DualPaneAST } from "./components/DualPaneAST";
+import { WordBankExplorer } from "./components/WordBankExplorer";
+import { SessionHistoryView } from "./components/SessionHistoryView";
 
 export default function App() {
-  const [targetText, setTargetText] = useState("hello");
-
-  const {
-    isListening,
-    isProcessing,
-    diagnostic,
-    startStreaming,
-    stopStreaming,
-  } = useAudioStreamer(targetText);
-
-  let title = "Needs Improvement";
-
-  if (diagnostic?.is_correct) {
-    title = "Correct";
-  } else if (diagnostic?.target_achieved) {
-    title = `Correct Target Word (${diagnostic.target})`;
-  }
+  const { startStreaming, stopStreaming } = useAudioStreamer();
+  const diagnostic = useTherapyStore((s) => s.diagnostic);
+  const userRole = useTherapyStore((s) => s.userRole);
+  const sourceLanguage = useTherapyStore((s) => s.sourceLanguage);
+  const highContrastMode = useTherapyStore((s) => s.highContrastMode);
+  const activeTab = useTherapyStore((s) => s.activeTab);
 
   return (
-    <div>
-      <h1>Diagnostic Engine</h1>
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: highContrastMode ? "#09090b" : "#f8fafc",
+        color: highContrastMode ? "#f4f4f5" : "#0f172a",
+        fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      }}
+    >
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 1.5rem 3rem" }}>
+        {/* Navigation & Clinical Controls */}
+        <RoleNavbar />
 
-      <div>
-        <label>Target Word: </label>
-        <input
-          type="text"
-          value={targetText}
-          onChange={(e) => setTargetText(e.target.value.toLowerCase())}
-          disabled={isListening}
-        />
-      </div>
-
-      <p>Status: {isListening ? "Listening..." : "Idle"}</p>
-
-      {diagnostic && (
-        <div>
-          <h3>{title}</h3>
-
-          <p>
-            <strong>You said:</strong> "{diagnostic.spoken}"
-          </p>
-
-          {!diagnostic.is_correct && diagnostic.errors.length > 0 && (
+        {/* Clinician Telemetry Banner (Visible in Therapist HUD) */}
+        {userRole === "therapist" && (
+          <aside
+            aria-label="Clinical telemetry bar"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "0.75rem",
+              padding: "0.65rem 1.25rem",
+              backgroundColor: highContrastMode ? "#18181b" : "#f1f5f9",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              marginBottom: "1.25rem",
+              fontSize: "0.8rem",
+            }}
+          >
             <div>
-              <h4>Feedback</h4>
+              <strong>Active Session:</strong> Patient Record <code>#pt_8492</code> | Dialect Track: <code>{sourceLanguage.toUpperCase()}-IN</code>
+            </div>
+            <div style={{ display: "flex", gap: "1.25rem", color: "#475569" }}>
+              <span>🔒 <strong>Storage:</strong> AES-256 S3 Encrypted</span>
+              <span>⚡ <strong>VAD:</strong> Silero 16kHz Real-time</span>
+              <span>🧠 <strong>Model:</strong> faster-whisper + IndicTrans2</span>
+            </div>
+          </aside>
+        )}
 
-              <ul>
-                {diagnostic.errors.map((err, idx) => (
-                  <li key={idx}>
-                    {err.type === "replace" && (
-                      <>
-                        Replaced {err.target_slice}
-                        {phonemeGuide[err.target_slice] &&
-                          ` (${phonemeGuide[err.target_slice]})`}
-                        {" with "}
-                        {err.spoken_slice}
-                        {phonemeGuide[err.spoken_slice] &&
-                          ` (${phonemeGuide[err.spoken_slice]})`}
-                      </>
-                    )}
-
-                    {err.type === "delete" && (
-                      <>
-                        Missed sound {err.target_slice}
-                        {phonemeGuide[err.target_slice] &&
-                          ` (${phonemeGuide[err.target_slice]})`}
-                      </>
-                    )}
-
-                    {err.type === "insert" && (
-                      <>
-                        {err.spoken_slice.length > 10
-                          ? "Extra words detected."
-                          : `Extra sound detected: ${err.spoken_slice}`}
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
+        {/* Dynamic Tab Body */}
+        <main>
+          {activeTab === "trial" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <AudioController onStart={startStreaming} onStop={stopStreaming} />
+              <DualPaneAST diagnostic={diagnostic} />
             </div>
           )}
-        </div>
-      )}
 
-      {!isListening && !isProcessing ? (
-        <button 
-          onClick={startStreaming} 
-        >
-          Start Speaking "{targetText}"
-        </button>
-      ) : (
-        <button 
-          onClick={stopStreaming} 
-          disabled={!isListening || isProcessing} 
-        >
-          {isProcessing ? 'Agent Thinking...' : 'Stop & Analyze'}
-        </button>
-      )}
+          {activeTab === "wordbank" && (
+            <WordBankExplorer
+              onSelectWord={() => {
+                therapyStore.setActiveTab("trial");
+              }}
+            />
+          )}
+
+          {activeTab === "history" && (
+            <SessionHistoryView />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
