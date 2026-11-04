@@ -7,6 +7,71 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
+  dataset-smoke:
+    name: Dataset Script Smoke Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Smoke-test Ingest + Annotate scripts
+        run: |
+          python -m py_compile backend/scripts/ingest_indicvoices.py
+          python -m py_compile backend/scripts/annotate_pairs.py
+          python -m pytest -o pythonpath=. backend/tests/test_ingest_indicvoices.py -q
+          # End-to-end smoke: one synthetic wav + tsv under an "English/" language
+          # folder (en-In). Ingest writes a manifest; annotate consumes it and emits
+          # an error-annotated SFT pair + annotation_summary.json, wiring the two
+          # dataset scripts together on a fresh checkout.
+          mkdir -p tmp_legacy_test/English/audio
+          python - <<'PY'
+          import struct, wave, math, json, os
+          rate = 16000
+          frames = int(rate * 1.2)
+          with wave.open("tmp_legacy_test/English/audio/hello.wav", "wb") as w:
+              w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate)
+              w.writeframes(
+                  b"".join(struct.pack("<h", int(8000*math.sin(2*math.pi*440*i/rate)))
+                            for i in range(frames)))
+          # uid must match the wav stem (hello) so AudioIndex stem-scan resolves it;
+          # the transcript text is "rabbit" so the error path always finds a Latin
+          # pattern (gliding_r) under correct_frac=0.0, proving end-to-end injection.
+          (open("tmp_legacy_test/English/meta_file.tsv", "w", encoding="utf-8")
+               .write("uniq_id\ttranscrip_text\nhello\trabbit\n"))
+          PY
+          python backend/scripts/ingest_indicvoices.py \
+              --source tmp_legacy_test \
+              --output-dir tmp_legacy_ingest --languages en-In
+          python -m pytest -o pythonpath=. backend/tests/test_annotate_pairs.py -q
+          python backend/scripts/annotate_pairs.py \
+              --dataset-dir tmp_legacy_ingest \
+              --output-dir tmp_legacy_sft --correct-frac 0.0 --seed 1
+          python - <<'PY'
+          import json, os
+          pairs = "tmp_legacy_sft/phonetics_pairs_en-In_train.jsonl"
+          summary = "tmp_legacy_sft/annotation_summary.json"
+          assert os.path.exists(pairs), pairs
+          assert os.path.exists(summary), summary
+          rows = [json.loads(l) for l in open(pairs, encoding="utf-8") if l.strip()]
+          assert len(rows) == 1, f"expected 1 SFT pair, got {len(rows)}"
+          rec = rows[0]
+          assert set(rec) >= {"instruction", "input", "output"}
+          assert rec["meta"]["language"] == "en-In"
+          assert rec["meta"]["error_mode"] == "error"
+          s = json.load(open(summary, encoding="utf-8"))
+          assert s["dry_run"] is False
+          assert s["totals"]["en-In:train_written"] == 1
+          assert s["modes"]["en-In:error_mode"] == 1
+          assert s["error_type_coverage"]
+          PY
+          rm -rf tmp_legacy_test tmp_legacy_ingest tmp_legacy_sft
+
   backend-tests:
     name: Backend Test Suite & Health Check
     runs-on: ubuntu-latest
@@ -33,7 +98,9 @@ jobs:
 
       - name: Run Backend Unit Tests (Pytest)
         run: |
-          pytest backend/tests -v --tb=short
+          python -m pytest -o pythonpath=. backend/tests -v --tb=short
+        env:
+          TESTING: "true"
 
   frontend-build:
     name: Frontend Lint & Production Build
