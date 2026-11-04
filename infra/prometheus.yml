@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    service: 'indicast-speech-therapy'
+    environment: 'development'
+
+rule_files: []
+
+scrape_configs:
+  # FastAPI backend metrics
+  - job_name: 'indicast-backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: /metrics
+    scheme: http
+
+  # Redis exporter (optional - add redis-exporter service if needed)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

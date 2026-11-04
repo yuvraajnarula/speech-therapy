@@ -1,0 +1,28 @@
+# OpenTelemetry Collector configuration.
+# Receives OTLP from the FastAPI app (via opentelemetry-instrumentation-fastapi)
+# and exposes Prometheus metrics on :8888.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  batch:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 65
+    spike_limit_percentage: 20
+
+exporters:
+  prometheus:
+    endpoint: "0.0.0.0:8888"
+    namespace: indicast
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch, memory_limiter]
+      exporters: [prometheus]
