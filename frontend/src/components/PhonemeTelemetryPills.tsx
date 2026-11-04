@@ -1,6 +1,5 @@
-import React from "react";
 import { Badge } from "./ui/Badge";
-import { DiagnosticResult, DiagnosticError } from "../store/therapyStore";
+import type { DiagnosticResult } from "../store/therapyStore";
 
 interface PhonemeTelemetryPillsProps {
   diagnostic: DiagnosticResult | null;
@@ -34,11 +33,11 @@ export const PhonemeTelemetryPills: React.FC<PhonemeTelemetryPillsProps> = ({ di
   return (
     <div
       style={{
-        borderRadius: "10px",
-        border: "1px solid #e2e8f0",
-        backgroundColor: "#ffffff",
+        borderRadius: "12px",
+        border: "1px solid var(--border-subdued)",
+        backgroundColor: "var(--surface-overlay)",
         padding: "1.25rem",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+        boxShadow: "0 2px 6px rgba(28, 25, 23, 0.10)",
       }}
     >
       {/* SODA Diagnostic Header */}
@@ -47,24 +46,24 @@ export const PhonemeTelemetryPills: React.FC<PhonemeTelemetryPillsProps> = ({ di
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: "1px solid #f1f5f9",
+          borderBottom: "1px solid var(--border-subdued)",
           paddingBottom: "0.75rem",
         }}
       >
         <div>
-          <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+          <h3 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>
             Phonemic Alignment & SODA Matrix
           </h3>
-          <p style={{ margin: "0.2rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>
-            SODA Taxonomy: Substitution, Omission, Distortion, Addition
+          <p style={{ margin: "0.2rem 0 0", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+            Taxonomy: Substitution, Omission, Distortion, Addition
           </p>
         </div>
 
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "1.35rem", fontWeight: 700, fontFamily: "ui-monospace, monospace", color: isCorrect ? "#059669" : "#d97706" }}>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700, fontFamily: "ui-monospace, monospace", color: isCorrect ? "var(--success-text)" : "var(--warn-text)" }}>
             {score}%
           </div>
-          <span style={{ fontSize: "0.7rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 600 }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 600 }}>
             Articulation Score
           </span>
         </div>
@@ -80,9 +79,9 @@ export const PhonemeTelemetryPills: React.FC<PhonemeTelemetryPillsProps> = ({ di
               gap: "0.5rem",
               padding: "0.5rem 0.85rem",
               borderRadius: "8px",
-              backgroundColor: "#ecfdf5",
-              border: "1px solid #a7f3d0",
-              color: "#065f46",
+              backgroundColor: "var(--success-bg)",
+              border: "1px solid var(--success-border)",
+              color: "var(--success-text)",
               fontSize: "0.85rem",
               fontWeight: 600,
             }}
@@ -106,25 +105,25 @@ export const PhonemeTelemetryPills: React.FC<PhonemeTelemetryPillsProps> = ({ di
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  padding: "0.5rem 0.75rem",
+                  padding: "0.55rem 0.85rem",
                   borderRadius: "8px",
                   border: isSub
-                    ? "1px solid #fca5a5"
+                    ? "1px solid var(--danger-text)"
                     : isDel
-                    ? "1px solid #fde68a"
-                    : "1px solid #bae6fd",
+                    ? "1px solid var(--warn-text)"
+                    : "1px solid var(--accent-primary)",
                   backgroundColor: isSub
-                    ? "#fef2f2"
+                    ? "var(--danger-text)"
                     : isDel
-                    ? "#fffbeb"
-                    : "#f0f9ff",
+                    ? "var(--warn-text)"
+                    : "var(--accent-primary)",
                   color: isSub
-                    ? "#991b1b"
+                    ? "var(--danger-text)"
                     : isDel
-                    ? "#92400e"
-                    : "#0369a1",
+                    ? "var(--warn-text)"
+                    : "var(--accent-primary)",
                   fontSize: "0.8rem",
-                  maxWidth: "260px",
+                  maxWidth: "280px",
                 }}
                 title={anatomy.cue}
               >
@@ -137,17 +136,17 @@ export const PhonemeTelemetryPills: React.FC<PhonemeTelemetryPillsProps> = ({ di
                   </Badge>
                 </div>
 
-                <div style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, margin: "0.25rem 0", fontSize: "0.9rem" }}>
+                <div style={{ fontFamily: "ui-monospace, monospace", fontWeight: 700, margin: "0.3rem 0", fontSize: "0.92rem" }}>
                   {isSub && (
                     <span>
-                      /{err.target_slice}/ ➔ <span style={{ textDecoration: "underline" }}>/{err.spoken_slice}/</span>
+                      /{err.target_slice}/ ➔ <span style={{ textDecoration: "underline", color: "var(--danger-text)" }}>/{err.spoken_slice}/</span>
                     </span>
                   )}
                   {isDel && <span>Omitted sound: /{err.target_slice}/</span>}
                   {isIns && <span>Extra sound: /{err.spoken_slice}/</span>}
                 </div>
 
-                <span style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.2rem" }}>
+                <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
                   {anatomy.placement}
                 </span>
               </div>
@@ -163,12 +162,14 @@ export const PhonemeTelemetryPills: React.FC<PhonemeTelemetryPillsProps> = ({ di
             marginTop: "1rem",
             padding: "0.75rem 1rem",
             borderRadius: "6px",
-            backgroundColor: "#f8fafc",
-            borderLeft: "3px solid #2563eb",
-            fontSize: "0.8rem",
-            color: "#334155",
+            backgroundColor: "var(--bg-canvas)",
+            borderLeft: "3px solid var(--accent-primary)",
+            fontSize: "0.82rem",
+            color: "var(--pill-text)",
             lineHeight: 1.5,
             whiteSpace: "pre-line",
+            border: "1px solid var(--border-subdued)",
+            borderLeftWidth: "3px",
           }}
         >
           {diagnostic.clinical_feedback}

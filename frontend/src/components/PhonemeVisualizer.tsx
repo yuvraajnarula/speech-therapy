@@ -1,5 +1,6 @@
-import React from "react";
-import { useTherapyStore, DiagnosticResult } from "../store/therapyStore";
+
+import { useTherapyStore } from "../store/therapyStore";
+import type { DiagnosticResult } from "../store/therapyStore";
 
 const PHONEME_GUIDE: Record<string, string> = {
   HH: "H (breath from throat)",
@@ -44,10 +45,10 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
         style={{
           padding: "2rem",
           textAlign: "center",
-          backgroundColor: highContrastMode ? "#111" : "#f8fafc",
+          backgroundColor: highContrastMode ? "var(--text-primary)" : "var(--bg-elevated)",
           borderRadius: "8px",
-          border: "1px dashed #94a3b8",
-          color: "#64748b",
+          border: "1px dashed var(--border-subdued)",
+          color: "var(--text-tertiary)",
         }}
       >
         <p>No audio analyzed yet. Click "Start Speaking" to begin your articulation exercise.</p>
@@ -63,8 +64,8 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
         display: "flex",
         flexDirection: "column",
         gap: "1.25rem",
-        backgroundColor: highContrastMode ? "#000" : "#ffffff",
-        border: `2px solid ${isSuccess ? "#10b981" : "#f59e0b"}`,
+        backgroundColor: highContrastMode ? "var(--text-primary)" : "var(--input-surface)",
+        border: `2px solid ${isSuccess ? "var(--success-border)" : "var(--warn-border)"}`,
         borderRadius: "10px",
         padding: "1.5rem",
       }}
@@ -79,8 +80,8 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
               borderRadius: "9999px",
               fontSize: "0.85rem",
               fontWeight: 700,
-              backgroundColor: isSuccess ? "#d1fae5" : "#fef3c7",
-              color: isSuccess ? "#065f46" : "#92400e",
+              backgroundColor: isSuccess ? "var(--success-bg)" : "var(--warn-bg)",
+              color: isSuccess ? "var(--success-text)" : "var(--warn-text)",
             }}
           >
             {isSuccess ? "Target Achieved!" : "Needs Improvement"}
@@ -89,8 +90,8 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
 
         {diagnostic.accuracy_score !== undefined && (
           <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: "0.85rem", color: "#64748b" }}>Articulation Accuracy: </span>
-            <strong style={{ fontSize: "1.2rem", color: isSuccess ? "#10b981" : "#d97706" }}>
+            <span style={{ fontSize: "0.85rem", color: "var(--text-tertiary)" }}>Articulation Accuracy: </span>
+            <strong style={{ fontSize: "1.2rem", color: isSuccess ? "var(--success-text)" : "var(--warn-text)" }}>
               {diagnostic.accuracy_score}%
             </strong>
           </div>
@@ -103,34 +104,34 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: "1rem",
-          backgroundColor: highContrastMode ? "#1e293b" : "#f1f5f9",
+          backgroundColor: highContrastMode ? "var(--surface-overlay)" : "var(--bg-elevated)",
           padding: "1rem",
           borderRadius: "8px",
         }}
       >
         <div>
-          <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+          <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-tertiary)", fontWeight: 700 }}>
             Target Phrase
           </span>
-          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: highContrastMode ? "#fff" : "#0f172a" }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: highContrastMode ? "#F9F6F0" : "var(--text-secondary)" }}>
             "{diagnostic.target}"
           </div>
           {diagnostic.target_phonemes && (
-            <div style={{ fontSize: "0.8rem", color: "#3b82f6", marginTop: "0.25rem" }}>
+            <div style={{ fontSize: "0.8rem", color: "var(--accent-primary)", marginTop: "0.25rem" }}>
               Phonemes: /{diagnostic.target_phonemes}/
             </div>
           )}
         </div>
 
         <div>
-          <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "#64748b", fontWeight: 700 }}>
+          <span style={{ fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-tertiary)", fontWeight: 700 }}>
             Spoken Detected
           </span>
-          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: highContrastMode ? "#fff" : "#0f172a" }}>
+          <div style={{ fontSize: "1.1rem", fontWeight: 600, color: highContrastMode ? "#F9F6F0" : "var(--text-secondary)" }}>
             "{diagnostic.spoken}"
           </div>
           {diagnostic.spoken_phonemes && (
-            <div style={{ fontSize: "0.8rem", color: "#6366f1", marginTop: "0.25rem" }}>
+            <div style={{ fontSize: "0.8rem", color: "var(--accent-primary)", marginTop: "0.25rem" }}>
               Phonemes: /{diagnostic.spoken_phonemes}/
             </div>
           )}
@@ -140,12 +141,12 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
       {/* Phonetic Articulation Errors */}
       {diagnostic.errors && diagnostic.errors.length > 0 && (
         <div>
-          <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.95rem", color: "#dc2626" }}>
+          <h4 style={{ margin: "0 0 0.5rem 0", fontSize: "0.95rem", color: "var(--danger-text)" }}>
             Articulation Deviations Detected:
           </h4>
           <ul style={{ margin: 0, paddingLeft: "1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
             {diagnostic.errors.map((err, idx) => (
-              <li key={idx} style={{ fontSize: "0.9rem", color: highContrastMode ? "#fff" : "#334155" }}>
+              <li key={idx} style={{ fontSize: "0.9rem", color: highContrastMode ? "#F9F6F0" : "var(--text-secondary)" }}>
                 {err.type === "replace" && (
                   <span>
                     <strong>Substituted</strong> /{err.target_slice}/
@@ -175,12 +176,12 @@ export const PhonemeVisualizer: React.FC<PhonemeVisualizerProps> = ({ diagnostic
       {diagnostic.clinical_feedback && (
         <div
           style={{
-            backgroundColor: highContrastMode ? "#1a2e05" : "#f0fdf4",
-            borderLeft: "4px solid #16a34a",
+            backgroundColor: highContrastMode ? "var(--success-bg)" : "var(--success-bg)",
+            borderLeft: "4px solid var(--success-border)",
             padding: "0.75rem 1rem",
             borderRadius: "4px",
             fontSize: "0.85rem",
-            color: highContrastMode ? "#dcfce7" : "#14532d",
+            color: highContrastMode ? "var(--success-text)" : "var(--success-text)",
             whiteSpace: "pre-line",
           }}
         >

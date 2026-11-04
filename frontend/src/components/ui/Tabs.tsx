@@ -1,5 +1,3 @@
-import React from "react";
-
 export interface TabItem {
   id: string;
   label: string;
@@ -19,10 +17,11 @@ export const Tabs: React.FC<TabsProps> = ({ items, activeId, onChange }) => {
       role="tablist"
       style={{
         display: "inline-flex",
-        backgroundColor: "#f1f5f9",
+        backgroundColor: "var(--surface-overlay)",
         padding: "3px",
-        borderRadius: "8px",
-        border: "1px solid #e2e8f0",
+        borderRadius: "var(--radius-control, 8px)",
+        border: "1px solid var(--border-standard)",
+        boxShadow: "var(--shadow-paper)",
       }}
     >
       {items.map((tab) => {
@@ -40,12 +39,12 @@ export const Tabs: React.FC<TabsProps> = ({ items, activeId, onChange }) => {
               padding: "0.45rem 1rem",
               fontSize: "0.85rem",
               fontWeight: isActive ? 600 : 500,
-              color: isActive ? "#0f172a" : "#64748b",
-              backgroundColor: isActive ? "#ffffff" : "transparent",
-              border: "none",
+              color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+              backgroundColor: isActive ? "var(--bg-elevated)" : "transparent",
+              border: isActive ? "1px solid var(--border-strong)" : "1px solid transparent",
               borderRadius: "6px",
               cursor: "pointer",
-              boxShadow: isActive ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+              boxShadow: isActive ? "var(--shadow-paper)" : "none",
               transition: "all 0.15s ease",
             }}
           >
@@ -57,9 +56,11 @@ export const Tabs: React.FC<TabsProps> = ({ items, activeId, onChange }) => {
                   fontSize: "0.7rem",
                   padding: "0.1rem 0.4rem",
                   borderRadius: "9999px",
-                  backgroundColor: isActive ? "#eff6ff" : "#e2e8f0",
-                  color: isActive ? "#2563eb" : "#475569",
+                  fontFamily: "var(--font-mono)",
+                  backgroundColor: isActive ? "var(--border-strong)" : "var(--surface-overlay)",
+                  color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
                   fontWeight: 600,
+                  border: "1px solid var(--border-standard)",
                 }}
               >
                 {tab.badge}

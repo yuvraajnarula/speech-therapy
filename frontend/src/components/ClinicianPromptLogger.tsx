@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Button } from "./ui/Button";
+import { useState } from "react";
 import { Badge } from "./ui/Badge";
-import { therapyStore, useTherapyStore, TrialLogItem } from "../store/therapyStore";
+import { therapyStore, useTherapyStore } from "../store/therapyStore";
+import type { TrialLogItem } from "../store/therapyStore";
 
 export type CueLevel = "independent" | "verbal" | "visual" | "tactile";
 
@@ -30,11 +30,11 @@ export const ClinicianPromptLogger: React.FC = () => {
   return (
     <div
       style={{
-        borderRadius: "10px",
-        border: "1px solid #e2e8f0",
-        backgroundColor: "#ffffff",
+        borderRadius: "12px",
+        border: "1px solid var(--border-subdued)",
+        backgroundColor: "var(--surface-overlay)",
         padding: "1.25rem",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+        boxShadow: "0 2px 6px rgba(28, 25, 23, 0.10)",
       }}
     >
       <div
@@ -42,16 +42,16 @@ export const ClinicianPromptLogger: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: "1px solid #f1f5f9",
+          borderBottom: "1px solid var(--border-subdued)",
           paddingBottom: "0.65rem",
           marginBottom: "0.85rem",
         }}
       >
         <div>
-          <h4 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>
+          <h4 style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "var(--text-primary)" }}>
             Clinician Prompt Hierarchy Logger
           </h4>
-          <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
             SOAP Clinical Telemetry & Prompt Recording
           </span>
         </div>
@@ -63,8 +63,8 @@ export const ClinicianPromptLogger: React.FC = () => {
       </div>
 
       {/* Prompt Hierarchy Selector */}
-      <div style={{ marginBottom: "0.75rem" }}>
-        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#64748b", display: "block", marginBottom: "0.4rem" }}>
+      <div style={{ marginBottom: "0.85rem" }}>
+        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: "0.4rem" }}>
           Prompt Level Provided:
         </span>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.4rem" }}>
@@ -74,16 +74,16 @@ export const ClinicianPromptLogger: React.FC = () => {
               type="button"
               onClick={() => setSelectedCue(level)}
               style={{
-                padding: "0.4rem 0.6rem",
+                padding: "0.45rem 0.6rem",
                 borderRadius: "6px",
                 fontSize: "0.75rem",
                 fontWeight: selectedCue === level ? 700 : 500,
                 textTransform: "capitalize",
-                border: selectedCue === level ? "1px solid #2563eb" : "1px solid #e2e8f0",
-                backgroundColor: selectedCue === level ? "#eff6ff" : "#ffffff",
-                color: selectedCue === level ? "#1d4ed8" : "#475569",
+                border: selectedCue === level ? "1px solid var(--accent-primary)" : "1px solid var(--border-subdued)",
+                backgroundColor: selectedCue === level ? "var(--surface-overlay)" : "var(--bg-canvas)",
+                color: selectedCue === level ? "var(--text-primary)" : "var(--text-secondary)",
                 cursor: "pointer",
-                transition: "all 0.1s ease",
+                transition: "all 0.15s ease",
               }}
             >
               {level}
@@ -102,11 +102,11 @@ export const ClinicianPromptLogger: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             gap: "0.3rem",
-            padding: "0.55rem 0.5rem",
+            padding: "0.6rem 0.5rem",
             borderRadius: "6px",
-            border: "1px solid #a7f3d0",
-            backgroundColor: "#ecfdf5",
-            color: "#065f46",
+            border: "1px solid var(--success-border)",
+            backgroundColor: "var(--success-bg)",
+            color: "var(--success-text)",
             fontSize: "0.8rem",
             fontWeight: 700,
             cursor: "pointer",
@@ -123,11 +123,11 @@ export const ClinicianPromptLogger: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             gap: "0.3rem",
-            padding: "0.55rem 0.5rem",
+            padding: "0.6rem 0.5rem",
             borderRadius: "6px",
-            border: "1px solid #fde68a",
-            backgroundColor: "#fffbeb",
-            color: "#92400e",
+            border: "1px solid var(--warn-border)",
+            backgroundColor: "var(--warn-bg)",
+            color: "var(--warn-text)",
             fontSize: "0.8rem",
             fontWeight: 700,
             cursor: "pointer",
@@ -144,11 +144,11 @@ export const ClinicianPromptLogger: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             gap: "0.3rem",
-            padding: "0.55rem 0.5rem",
+            padding: "0.6rem 0.5rem",
             borderRadius: "6px",
-            border: "1px solid #fecaca",
-            backgroundColor: "#fef2f2",
-            color: "#991b1b",
+            border: "1px solid var(--danger-border)",
+            backgroundColor: "var(--danger-bg)",
+            color: "var(--danger-text)",
             fontSize: "0.8rem",
             fontWeight: 700,
             cursor: "pointer",
@@ -160,20 +160,20 @@ export const ClinicianPromptLogger: React.FC = () => {
 
       {/* Recent Trial Logs */}
       {trialLogs.length > 0 && (
-        <div style={{ marginTop: "0.85rem", borderTop: "1px solid #f1f5f9", paddingTop: "0.6rem" }}>
+        <div style={{ marginTop: "0.85rem", borderTop: "1px solid var(--border-subdued)", paddingTop: "0.65rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-            <span style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "#94a3b8" }}>
+            <span style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-tertiary)" }}>
               Recent Block Logs
             </span>
             <button
               type="button"
               onClick={() => therapyStore.clearTrialLogs()}
-              style={{ background: "none", border: "none", fontSize: "0.7rem", color: "#64748b", cursor: "pointer", textDecoration: "underline" }}
+              style={{ background: "none", border: "none", fontSize: "0.7rem", color: "var(--surface-overlay)", cursor: "pointer", textDecoration: "underline" }}
             >
               Clear
             </button>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: "120px", overflowY: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", maxHeight: "120px", overflowY: "auto" }}>
             {trialLogs.slice(-4).reverse().map((log) => (
               <div
                 key={log.id}
@@ -182,16 +182,16 @@ export const ClinicianPromptLogger: React.FC = () => {
                   alignItems: "center",
                   justifyContent: "space-between",
                   fontSize: "0.75rem",
-                  padding: "0.25rem 0.5rem",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "4px",
-                  border: "1px solid #f1f5f9",
+                  padding: "0.3rem 0.6rem",
+                  backgroundColor: "var(--bg-canvas)",
+                  borderRadius: "6px",
+                  border: "1px solid var(--border-subdued)",
                 }}
               >
                 <span>
-                  <strong>"{log.targetWord}"</strong> ({log.cueLevel})
+                  <strong style={{ color: "var(--text-primary)" }}>"{log.targetWord}"</strong> ({log.cueLevel})
                 </span>
-                <span style={{ fontWeight: 700, color: log.rating === "correct" ? "#059669" : log.rating === "approx" ? "#d97706" : "#dc2626" }}>
+                <span style={{ fontWeight: 700, color: log.rating === "correct" ? "var(--success-text)" : log.rating === "approx" ? "var(--warn-text)" : "var(--danger-text)" }}>
                   {log.rating.toUpperCase()} • {log.timestamp}
                 </span>
               </div>

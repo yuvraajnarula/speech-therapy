@@ -31,6 +31,48 @@ export interface TrialLogItem {
   timestamp: string;
 }
 
+// ---------------------------------------------------------------------------
+// Memory Layer types
+// ---------------------------------------------------------------------------
+export interface PatientMemory {
+  patient_id: string;
+  dialect: string;
+  phoneme_errors: Record<string, number>;
+  mastery_scores: Record<string, number>;
+  weak_phonemes_ranked: string[];
+  recent_utterances: Array<Record<string, unknown>>;
+  total_sessions: number;
+  total_attempts: number;
+  consecutive_correct: number;
+  consecutive_incorrect: number;
+  last_updated: string;
+}
+
+// ---------------------------------------------------------------------------
+// Live Tutor types
+// ---------------------------------------------------------------------------
+export interface TutorCue {
+  target_word: string;
+  phoneme_target: string;
+  cue_text: string;
+  native_script: string;
+  ipa: string;
+  category: string;
+}
+
+export interface TutorSession {
+  status: "idle" | "active" | "complete";
+  currentCue: TutorCue | null;
+  sessionScore: { correct: number; total: number };
+  encouragement: string;
+  memorySnapshot: {
+    weak_phonemes: string[];
+    consecutive_correct: number;
+    consecutive_incorrect: number;
+    total_attempts: number;
+  } | null;
+}
+
 export interface TherapyState {
   userRole: "therapist" | "patient";
   targetWord: string;
@@ -41,9 +83,11 @@ export interface TherapyState {
   agentStatus: string;
   diagnostic: DiagnosticResult | null;
   highContrastMode: boolean;
-  activeTab: "trial" | "wordbank" | "history";
+  activeTab: "trial" | "wordbank" | "history" | "tutor";
   hasPatientAudio: boolean;
   trialLogs: TrialLogItem[];
+  patientMemory: PatientMemory | null;
+  tutorSession: TutorSession;
 }
 
 const initialState: TherapyState = {
@@ -59,6 +103,14 @@ const initialState: TherapyState = {
   activeTab: "trial",
   hasPatientAudio: false,
   trialLogs: [],
+  patientMemory: null,
+  tutorSession: {
+    status: "idle",
+    currentCue: null,
+    sessionScore: { correct: 0, total: 0 },
+    encouragement: "",
+    memorySnapshot: null,
+  },
 };
 
 let state: TherapyState = { ...initialState };
@@ -108,7 +160,7 @@ export const therapyStore = {
   setHasPatientAudio: (hasAudio: boolean) => {
     therapyStore.setState({ hasPatientAudio: hasAudio });
   },
-  setActiveTab: (tab: "trial" | "wordbank" | "history") => {
+  setActiveTab: (tab: "trial" | "wordbank" | "history" | "tutor") => {
     therapyStore.setState({ activeTab: tab });
   },
   addTrialLog: (log: TrialLogItem) => {
@@ -127,6 +179,29 @@ export const therapyStore = {
       isProcessing: false,
       hasPatientAudio: false,
       agentStatus: "Ready",
+    });
+  },
+
+  // Memory layer
+  setPatientMemory: (memory: PatientMemory | null) => {
+    therapyStore.setState({ patientMemory: memory });
+  },
+
+  // Live Tutor
+  setTutorSession: (patch: Partial<TutorSession>) => {
+    therapyStore.setState((prev) => ({
+      tutorSession: { ...prev.tutorSession, ...patch },
+    }));
+  },
+  resetTutorSession: () => {
+    therapyStore.setState({
+      tutorSession: {
+        status: "idle",
+        currentCue: null,
+        sessionScore: { correct: 0, total: 0 },
+        encouragement: "",
+        memorySnapshot: null,
+      },
     });
   },
 };

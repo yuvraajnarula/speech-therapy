@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useTherapyStore, therapyStore } from "../store/therapyStore";
 import { Button } from "./ui/Button";
 import { Badge } from "./ui/Badge";
@@ -38,8 +38,59 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
 
   // Suggestions for current language
   const languageSuggestions = INDIC_WORD_BANK.filter(
-    (w) => w.language === sourceLanguage || (sourceLanguage === "en" && w.language === "en-IN")
+    (w) => w.language === sourceLanguage
   ).slice(0, 5);
+
+  // Clinical Demo Simulation for offline / test environments
+  const handleSimulateTrial = () => {
+    therapyStore.setIsProcessing(true);
+    therapyStore.setAgentStatus("Simulating acoustic alignment & SODA matrix...");
+
+    setTimeout(() => {
+      const isClean = Math.random() > 0.35;
+      const targetPhonemes = matchedItem ? matchedItem.phonemeArray.join("") : targetWord.toUpperCase();
+
+      if (isClean) {
+        therapyStore.setDiagnostic({
+          type: "diagnostic",
+          target: targetWord,
+          spoken: targetWord,
+          target_phonemes: targetPhonemes,
+          spoken_phonemes: targetPhonemes,
+          is_correct: true,
+          target_achieved: true,
+          accuracy_score: 95,
+          errors: [],
+          clinical_feedback: "Optimal articulatory placement observed. Acoustic energy and duration meet clinical target thresholds.",
+          translated_text: matchedItem?.englishMeaning || targetWord,
+        });
+      } else {
+        const errorPhoneme = matchedItem ? matchedItem.phonemeArray[0] : "P";
+        therapyStore.setDiagnostic({
+          type: "diagnostic",
+          target: targetWord,
+          spoken: targetWord.slice(0, -1) + "a",
+          target_phonemes: targetPhonemes,
+          spoken_phonemes: targetPhonemes.replace(errorPhoneme, "T"),
+          is_correct: false,
+          target_achieved: false,
+          accuracy_score: 68,
+          errors: [
+            {
+              type: "replace",
+              target_slice: errorPhoneme,
+              spoken_slice: "T",
+            },
+          ],
+          clinical_feedback: `Articulatory Deviation: Substitution error detected on /${errorPhoneme}/ target. Tongue posture or lip closure deviated towards alveolar tap.`,
+          translated_text: matchedItem?.englishMeaning || targetWord,
+        });
+      }
+
+      therapyStore.setIsProcessing(false);
+      therapyStore.setAgentStatus("Clinical analysis complete.");
+    }, 600);
+  };
 
   return (
     <section
@@ -48,11 +99,11 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
         display: "flex",
         flexDirection: "column",
         gap: "1.25rem",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--surface-overlay)",
         padding: "1.5rem",
         borderRadius: "12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        border: "1px solid #e2e8f0",
+        boxShadow: "0 2px 6px rgba(28, 25, 23, 0.10)",
+        border: "1px solid var(--border-subdued)",
       }}
     >
       {/* Target Stimulus Card Display */}
@@ -63,48 +114,48 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
           alignItems: "center",
           flexWrap: "wrap",
           gap: "1rem",
-          backgroundColor: "#f8fafc",
-          border: "1px solid #e2e8f0",
+          backgroundColor: "var(--bg-canvas)",
+          border: "1px solid var(--border-subdued)",
           borderRadius: "8px",
-          padding: "1rem 1.25rem",
+          padding: "1.15rem 1.25rem",
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-            <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", color: "#64748b" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-secondary)", letterSpacing: "0.04em" }}>
               Active Target Stimulus
             </span>
             {matchedItem && (
               <Badge variant="secondary">
-                {matchedItem.phonemeTarget} • {matchedItem.phoneticPosition}
+                {matchedItem.phonemeTarget} • {matchedItem.phoneticPosition} sound
               </Badge>
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem", flexWrap: "wrap" }}>
             {matchedItem?.nativeScript && (
-              <span style={{ fontSize: "2.25rem", fontWeight: 800, color: "#0f172a" }}>
+              <span style={{ fontSize: "2.35rem", fontWeight: 800, color: "var(--text-primary)" }}>
                 {matchedItem.nativeScript}
               </span>
             )}
-            <span style={{ fontSize: "1.5rem", fontWeight: 700, color: "#2563eb" }}>
+            <span style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--accent-primary)" }}>
               "{targetWord}"
             </span>
             {matchedItem && (
-              <span style={{ fontSize: "0.9rem", color: "#64748b" }}>
+              <span style={{ fontSize: "0.95rem", color: "var(--text-secondary)" }}>
                 ({matchedItem.englishMeaning})
               </span>
             )}
           </div>
 
           {matchedItem && (
-            <div style={{ fontSize: "0.8rem", color: "#475569", marginTop: "0.25rem" }}>
-              IPA: <code style={{ color: "#2563eb", fontWeight: 600 }}>{matchedItem.ipa}</code> — {matchedItem.clinicalCue}
+            <div style={{ fontSize: "0.8rem", color: "var(--text-tertiary)", marginTop: "0.35rem" }}>
+              IPA: <code style={{ color: "var(--accent-primary)", fontWeight: 600, backgroundColor: "var(--surface-overlay)", padding: "2px 6px", borderRadius: "4px" }}>{matchedItem.ipa}</code> — {matchedItem.clinicalCue}
             </div>
           )}
         </div>
 
-        {/* Custom target input */}
+        {/* Custom target input & bank explorer quick jump */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <input
             type="text"
@@ -115,7 +166,9 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
             style={{
               padding: "0.5rem 0.85rem",
               borderRadius: "6px",
-              border: "1px solid #cbd5e1",
+              border: "1px solid var(--border-strong)",
+              backgroundColor: "var(--bg-canvas)",
+              color: "var(--text-primary)",
               fontSize: "0.9rem",
               width: "160px",
             }}
@@ -133,7 +186,7 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
       {/* Suggested Words Bar */}
       {languageSuggestions.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#94a3b8", textTransform: "uppercase" }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase" }}>
             Quick Drill Targets:
           </span>
           {languageSuggestions.map((item) => (
@@ -150,24 +203,25 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
                 gap: "0.35rem",
                 padding: "0.25rem 0.65rem",
                 borderRadius: "6px",
-                border: targetWord.toLowerCase() === item.romanized.toLowerCase() ? "1px solid #2563eb" : "1px solid #e2e8f0",
-                backgroundColor: targetWord.toLowerCase() === item.romanized.toLowerCase() ? "#eff6ff" : "#f8fafc",
-                color: targetWord.toLowerCase() === item.romanized.toLowerCase() ? "#1d4ed8" : "#334155",
+                border: targetWord.toLowerCase() === item.romanized.toLowerCase() ? "1px solid var(--accent-primary)" : "1px solid var(--border-subdued)",
+                backgroundColor: targetWord.toLowerCase() === item.romanized.toLowerCase() ? "var(--surface-overlay)" : "var(--bg-canvas)",
+                color: targetWord.toLowerCase() === item.romanized.toLowerCase() ? "var(--text-primary)" : "var(--text-secondary)",
                 fontSize: "0.8rem",
                 fontWeight: 600,
                 cursor: "pointer",
+                transition: "all 0.15s ease",
               }}
             >
               <span>{item.nativeScript}</span>
-              <span style={{ fontWeight: 400, color: "#64748b" }}>({item.romanized})</span>
+              <span style={{ fontWeight: 400, color: "var(--text-tertiary)" }}>({item.romanized})</span>
             </button>
           ))}
         </div>
       )}
 
-      {/* Recording PTT Button & Audio Meter */}
+      {/* Recording PTT Button & Action Bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
           {!isListening && !isProcessing ? (
             <button
               type="button"
@@ -176,21 +230,22 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.75rem 1.85rem",
-                backgroundColor: "#0f172a",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "8px",
+                gap: "0.6rem",
+                padding: "0.75rem 1.75rem",
+                backgroundColor: "var(--surface-overlay)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-strong)",
+                borderRadius: "9999px",
                 fontSize: "0.95rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                boxShadow: "0 2px 4px rgba(28, 25, 23, 0.10)",
+                transition: "all 0.15s ease",
               }}
             >
               <span style={{ fontSize: "1.1rem" }}>🎙️</span>
               <span>Start Speaking "{targetWord}"</span>
-              <span style={{ fontSize: "0.75rem", opacity: 0.6, marginLeft: "0.25rem" }}>[Space]</span>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginLeft: "0.25rem" }}>[Space]</span>
             </button>
           ) : (
             <button
@@ -201,52 +256,43 @@ export const AudioController: React.FC<AudioControllerProps> = ({ onStart, onSto
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.75rem 1.85rem",
-                backgroundColor: isProcessing ? "#475569" : "#dc2626",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: "8px",
+                gap: "0.6rem",
+                padding: "0.75rem 1.75rem",
+                backgroundColor: "var(--danger-bg)",
+                color: "var(--danger-text)",
+                border: "1px solid var(--danger-border)",
+                borderRadius: "9999px",
                 fontSize: "0.95rem",
                 fontWeight: 600,
-                cursor: isProcessing ? "wait" : "pointer",
+                cursor: "pointer",
+                animation: isListening ? "pulse 1.8s infinite" : "none",
               }}
             >
-              <span>{isProcessing ? "⏳" : "⏹️"}</span>
-              <span>{isProcessing ? "Aligning Phonemes..." : "Stop & Analyze Take"}</span>
+              <span style={{ fontSize: "1.1rem" }}>⏹️</span>
+              <span>Stop & Analyze Pronunciation</span>
             </button>
           )}
 
-          {/* Voice Pulse Indicator */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            {isListening && (
-              <span
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: "#ef4444",
-                  display: "inline-block",
-                  animation: "pulse 1.5s infinite",
-                }}
-              />
-            )}
-            <span
-              aria-live="polite"
-              style={{
-                fontSize: "0.85rem",
-                color: isListening ? "#dc2626" : isProcessing ? "#2563eb" : "#64748b",
-                fontWeight: 500,
-              }}
-            >
-              {agentStatus}
-            </span>
-          </div>
+          {/* Quick Demo Simulator button for seamless testing */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSimulateTrial}
+            disabled={isListening || isProcessing}
+            title="Run simulated acoustic analysis with SODA matrix and clinical alignment"
+          >
+            ✨ Run SODA Trial Simulation
+          </Button>
         </div>
 
-        {/* Keyboard shortcut hint */}
-        <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-          Press <kbd style={{ padding: "0.15rem 0.4rem", backgroundColor: "#f1f5f9", borderRadius: "4px", border: "1px solid #cbd5e1" }}>Space</kbd> to talk / stop
+        {/* Engine Pipeline Status Pill */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 700 }}>
+            Pipeline Status:
+          </span>
+          <Badge variant={isListening ? "warning" : isProcessing ? "secondary" : "default"}>
+            {agentStatus}
+          </Badge>
         </div>
       </div>
     </section>

@@ -1,20 +1,78 @@
+/* ============================================================
+   IndicAST — Warm Tactile Paper Bento design system (design.md)
+   Tokens are the single source of truth; components reference
+   var(--*) only. Cold slate palette is retired.
+   ============================================================ */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap");
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Typography (design.md): editorial serif heads, humanist body, technical mono */
+  font-family: Inter, "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
-  color: #0f172a;
-  background-color: #f8fafc;
+  color-scheme: light;
+  color: var(--text-primary, #1C1917);
+  background-color: var(--bg-canvas, #F9F6F0);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* --- Color palette (design.md: Warm Cream & Paper) --- */
+  --bg-canvas: #F9F6F0;        /* warm unbleached cream / soft rice paper */
+  --surface-overlay: #F2ECE1;  /* warm stone / pressed cotton paper (cards) */
+  --bg-elevated: #EBE2D3;      /* deep oat / recycled cardboard (active・hover) */
+  --input-surface: #FFFFFF;
+
+  --text-primary: #1C1917;     /* warm charcoal / graphite ink — never #000 */
+  --text-secondary: #57534E;   /* muted slate / lead pencil */
+  --text-tertiary: #78716C;
+
+  --accent-primary: #C25E00;   /* burnt persimmon / aged terracotta */
+  --accent-secondary: #3F5E4D; /* deep forest / vintage sage */
+
+  --border-standard: #E4DCD0;  /* 1px debossed paper crease */
+  --border-subdued: #EAE3D6;
+  --border-strong: #D8CDBB;
+
+  --pill-fill: #F2ECE1;
+  --pill-text: #57534E;
+  --highlight-path: #D8CDBB;
+
+  /* Semantic status (derived warm-paper treatments) */
+  --success-bg: #E3EBE6; --success-text: #3F5E4D; --success-border: #C9D6CE;
+  --warn-bg: #F5E9D6;    --warn-text: #8A5A00;    --warn-border: #E3CFa8;
+  --danger-bg: #F6E4DE;  --danger-text: #A8402F;  --danger-border: #E6C9BF;
+
+  /* Typography tokens */
+  --font-heading: "Newsreader", "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-body: Inter, "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+
+  /* Tactile shape */
+  --radius-card: 14px;
+  --radius-control: 8px;
+  --shadow-paper: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --shadow-lift: 0 1px 2px rgba(28, 25, 23, 0.06), 0 4px 12px rgba(28, 25, 23, 0.04);
+}
+
+/* --- Paper fiber grain: ultra-low opacity overlay across the app ------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
 }
 
 #root {
@@ -22,25 +80,50 @@ body {
   margin: 0 auto;
 }
 
-/* Accessibility Focus States */
+/* --- Bento card primitives (design.md: physical paper lift) ------------ */
+.paper-card {
+  background-color: var(--surface-overlay);
+  border: 1px solid var(--border-standard);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-paper);
+  min-height: fit-content;
+  padding: 1.25rem 1.5rem;        /* 20–24px breathing room */
+}
+
+.hover-press {
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.05s ease;
+}
+.hover-press:hover:not(:disabled) {
+  border-color: var(--accent-primary);   /* warm terracotta crease on hover */
+}
+
+/* --- Accessibility focus states ---------------------------------------- */
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
-  outline: 3px solid #3b82f6;
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-secondary);
   outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(63, 94, 77, 0.35);
 }
+
+/* --- Scrollbars: faint graphite on paper -------------------------------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-canvas); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
 @keyframes pulse {
   0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(168, 64, 47, 0.7);
   }
   70% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(168, 64, 47, 0);
   }
   100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(168, 64, 47, 0);
   }
 }

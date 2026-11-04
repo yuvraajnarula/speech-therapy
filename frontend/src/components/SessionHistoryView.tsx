@@ -1,4 +1,3 @@
-import React from "react";
 import { useTherapyStore, therapyStore } from "../store/therapyStore";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
@@ -20,20 +19,20 @@ export const SessionHistoryView: React.FC = () => {
         display: "flex",
         flexDirection: "column",
         gap: "1.25rem",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--surface-overlay)",
         borderRadius: "12px",
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--border-subdued)",
         padding: "1.5rem",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: "0 2px 8px rgba(28, 25, 23, 0.10)",
       }}
     >
       {/* Header & Clinical Metrics */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>
+          <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "var(--text-primary)" }}>
             Clinical SOAP Trial Telemetry & Progress
           </h3>
-          <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+          <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
             Trial-by-trial articulatory data for clinical documentation and insurance billing
           </p>
         </div>
@@ -59,39 +58,48 @@ export const SessionHistoryView: React.FC = () => {
       </div>
 
       {/* Trial Performance Cards Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
-        <div style={{ padding: "0.85rem", backgroundColor: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-          <span style={{ fontSize: "0.7rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.75rem" }}>
+        <div style={{ padding: "0.85rem", backgroundColor: "var(--bg-canvas)", borderRadius: "8px", border: "1px solid var(--surface-overlay)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 700 }}>
             Total Trials
           </span>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a", fontFamily: "ui-monospace, monospace" }}>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--text-primary)", fontFamily: "ui-monospace, monospace" }}>
             {totalTrials}
           </div>
         </div>
 
-        <div style={{ padding: "0.85rem", backgroundColor: "#ecfdf5", borderRadius: "8px", border: "1px solid #a7f3d0" }}>
-          <span style={{ fontSize: "0.7rem", color: "#065f46", textTransform: "uppercase", fontWeight: 700 }}>
+        <div style={{ padding: "0.85rem", backgroundColor: "var(--success-bg)", borderRadius: "8px", border: "1px solid var(--success-bg)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--success-text)", textTransform: "uppercase", fontWeight: 700 }}>
             Independent / Correct
           </span>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#065f46", fontFamily: "ui-monospace, monospace" }}>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--success-text)", fontFamily: "ui-monospace, monospace" }}>
             {correctCount}
           </div>
         </div>
 
-        <div style={{ padding: "0.85rem", backgroundColor: "#fffbeb", borderRadius: "8px", border: "1px solid #fde68a" }}>
-          <span style={{ fontSize: "0.7rem", color: "#92400e", textTransform: "uppercase", fontWeight: 700 }}>
+        <div style={{ padding: "0.85rem", backgroundColor: "var(--warn-bg)", borderRadius: "8px", border: "1px solid var(--warn-bg)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--warn-text)", textTransform: "uppercase", fontWeight: 700 }}>
             Approximated (Prompted)
           </span>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#92400e", fontFamily: "ui-monospace, monospace" }}>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--warn-text)", fontFamily: "ui-monospace, monospace" }}>
             {approxCount}
           </div>
         </div>
 
-        <div style={{ padding: "0.85rem", backgroundColor: "#eff6ff", borderRadius: "8px", border: "1px solid #bfdbfe" }}>
-          <span style={{ fontSize: "0.7rem", color: "#1d4ed8", textTransform: "uppercase", fontWeight: 700 }}>
+        <div style={{ padding: "0.85rem", backgroundColor: "var(--danger-bg)", borderRadius: "8px", border: "1px solid var(--danger-bg)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--danger-text)", textTransform: "uppercase", fontWeight: 700 }}>
+            Deviations / Incorrect
+          </span>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--danger-text)", fontFamily: "ui-monospace, monospace" }}>
+            {incorrectCount}
+          </div>
+        </div>
+
+        <div style={{ padding: "0.85rem", backgroundColor: "var(--accent-primary)", borderRadius: "8px", border: "1px solid var(--accent-primary)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--accent-primary)", textTransform: "uppercase", fontWeight: 700 }}>
             Weighted Mastery Score
           </span>
-          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1d4ed8", fontFamily: "ui-monospace, monospace" }}>
+          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--accent-primary)", fontFamily: "ui-monospace, monospace" }}>
             {overallAccuracy}%
           </div>
         </div>
@@ -99,38 +107,36 @@ export const SessionHistoryView: React.FC = () => {
 
       {/* Trial Logs Table */}
       {totalTrials > 0 ? (
-        <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
+        <div style={{ overflowX: "auto", border: "1px solid var(--border-subdued)", borderRadius: "8px" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem", textAlign: "left" }}>
             <thead>
-              <tr style={{ backgroundColor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-                <th style={{ padding: "0.65rem 1rem", color: "#64748b", fontWeight: 600 }}>Timestamp</th>
-                <th style={{ padding: "0.65rem 1rem", color: "#64748b", fontWeight: 600 }}>Target Stimulus</th>
-                <th style={{ padding: "0.65rem 1rem", color: "#64748b", fontWeight: 600 }}>Prompt Level</th>
-                <th style={{ padding: "0.65rem 1rem", color: "#64748b", fontWeight: 600 }}>Rating</th>
-                <th style={{ padding: "0.65rem 1rem", color: "#64748b", fontWeight: 600 }}>Mastery Value</th>
+              <tr style={{ backgroundColor: "var(--bg-canvas)", borderBottom: "1px solid var(--surface-overlay)" }}>
+                <th style={{ padding: "0.65rem 1rem", color: "var(--text-secondary)", fontWeight: 600 }}>Timestamp</th>
+                <th style={{ padding: "0.65rem 1rem", color: "var(--text-secondary)", fontWeight: 600 }}>Target Stimulus</th>
+                <th style={{ padding: "0.65rem 1rem", color: "var(--text-secondary)", fontWeight: 600 }}>Prompt Level</th>
+                <th style={{ padding: "0.65rem 1rem", color: "var(--text-secondary)", fontWeight: 600 }}>Rating</th>
+                <th style={{ padding: "0.65rem 1rem", color: "var(--text-secondary)", fontWeight: 600 }}>Mastery Value</th>
               </tr>
             </thead>
             <tbody>
               {trialLogs.slice().reverse().map((trial) => (
-                <tr key={trial.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                  <td style={{ padding: "0.65rem 1rem", color: "#64748b", fontFamily: "ui-monospace, monospace" }}>
+                <tr key={trial.id} style={{ borderBottom: "1px solid var(--surface-overlay)", backgroundColor: "var(--bg-canvas)" }}>
+                  <td style={{ padding: "0.65rem 1rem", color: "var(--text-secondary)", fontFamily: "ui-monospace, monospace" }}>
                     {trial.timestamp}
                   </td>
-                  <td style={{ padding: "0.65rem 1rem", fontWeight: 600, color: "#0f172a" }}>
+                  <td style={{ padding: "0.65rem 1rem", fontWeight: 600, color: "var(--text-primary)" }}>
                     "{trial.targetWord}"
                   </td>
                   <td style={{ padding: "0.65rem 1rem" }}>
-                    <Badge variant="outline">
-                      {trial.cueLevel.toUpperCase()}
-                    </Badge>
+                    <Badge variant="outline">{trial.cueLevel}</Badge>
                   </td>
                   <td style={{ padding: "0.65rem 1rem" }}>
                     <Badge variant={trial.rating === "correct" ? "success" : trial.rating === "approx" ? "warning" : "destructive"}>
                       {trial.rating.toUpperCase()}
                     </Badge>
                   </td>
-                  <td style={{ padding: "0.65rem 1rem", fontFamily: "ui-monospace, monospace", fontWeight: 700 }}>
-                    {trial.score.toFixed(1)}
+                  <td style={{ padding: "0.65rem 1rem", fontFamily: "ui-monospace, monospace", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {(trial.score * 100).toFixed(0)}%
                   </td>
                 </tr>
               ))}
@@ -140,42 +146,44 @@ export const SessionHistoryView: React.FC = () => {
       ) : (
         <div
           style={{
-            padding: "3rem",
+            padding: "2.5rem",
             textAlign: "center",
-            backgroundColor: "#f8fafc",
+            backgroundColor: "var(--bg-canvas)",
             borderRadius: "8px",
-            border: "1px dashed #cbd5e1",
-            color: "#64748b",
+            border: "1px dashed var(--border-subdued)",
+            color: "var(--text-tertiary)",
           }}
         >
-          <p style={{ margin: 0, fontSize: "0.9rem" }}>
-            No trials recorded in current session block. Complete speech attempts or log clinician prompts to populate SOAP telemetry.
+          <div style={{ fontSize: "1.75rem", marginBottom: "0.5rem" }}>📊</div>
+          <h4 style={{ margin: "0 0 0.25rem", color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+            No Clinical Trials Logged in this Session
+          </h4>
+          <p style={{ margin: 0, fontSize: "0.8rem" }}>
+            Rate patient takes using the Clinician Prompt Hierarchy Logger to compile automated SOAP progress metrics.
           </p>
         </div>
       )}
 
-      {/* Clinician SOAP Narrative Draft */}
-      {userRole === "therapist" && totalTrials > 0 && (
+      {/* Clinical Notes Section */}
+      {userRole === "therapist" && (
         <div
           style={{
-            backgroundColor: "#f8fafc",
-            borderLeft: "4px solid #0f172a",
+            backgroundColor: "var(--bg-canvas)",
+            borderRadius: "8px",
+            border: "1px solid var(--border-subdued)",
             padding: "1rem 1.25rem",
-            borderRadius: "6px",
             fontSize: "0.8rem",
-            color: "#334155",
-            lineHeight: 1.6,
           }}
         >
-          <strong>Draft SOAP Note:</strong>
-          <br />
-          <strong>S:</strong> Patient attended session targeting Indian dialect articulation ({sourceLanguage.toUpperCase()}). Cooperated with visual and acoustic prompts.
-          <br />
-          <strong>O:</strong> Patient completed {totalTrials} trials. Achieved {correctCount}/{totalTrials} ({overallAccuracy}%) accuracy across target phoneme stimuli.
-          <br />
-          <strong>A:</strong> Demonstrated improved articulatory placement on bilabial plosives. Minor substitution errors noted on retroflex stops requiring visual modeling.
-          <br />
-          <strong>P:</strong> Continue multi-sensory drill in carrier phrases. Transition to independent production next session.
+          <div style={{ fontWeight: 700, color: "var(--text-tertiary)", marginBottom: "0.4rem" }}>
+            SOAP Clinical Summary Note Draft:
+          </div>
+          <div style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            <strong>S (Subjective):</strong> Patient engaged in articulatory practice across dialect track <code>{sourceLanguage.toUpperCase()}-IN</code>.<br />
+            <strong>O (Objective):</strong> Total stimulus drill count: {totalTrials} trials. Overall unassisted accuracy: {overallAccuracy}%.<br />
+            <strong>A (Assessment):</strong> {overallAccuracy >= 80 ? "Demonstrates sound mastery at the single-word level." : "Requires continued visual and verbal cues for alveolar/bilabial sound contrast."}<br />
+            <strong>P (Plan):</strong> Continue daily 15-minute drills using native script cues with 0.75x slow auditory playback.
+          </div>
         </div>
       )}
     </div>

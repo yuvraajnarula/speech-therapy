@@ -1,4 +1,4 @@
-import React from "react";
+import { useEffect } from "react";
 import { useAudioStreamer } from "./protocol/useAudioStreamer";
 import { useTherapyStore, therapyStore } from "./store/therapyStore";
 import { RoleNavbar } from "./components/RoleNavbar";
@@ -6,6 +6,8 @@ import { AudioController } from "./components/AudioController";
 import { DualPaneAST } from "./components/DualPaneAST";
 import { WordBankExplorer } from "./components/WordBankExplorer";
 import { SessionHistoryView } from "./components/SessionHistoryView";
+import { ClinicalCommandBar } from "./components/ClinicalCommandBar";
+import LiveTutorMode from "./components/LiveTutorMode";
 
 export default function App() {
   const { startStreaming, stopStreaming } = useAudioStreamer();
@@ -15,12 +17,20 @@ export default function App() {
   const highContrastMode = useTherapyStore((s) => s.highContrastMode);
   const activeTab = useTherapyStore((s) => s.activeTab);
 
+  // Deep-link support: /?tab=tutor|trial|wordbank|history
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "trial" || tab === "wordbank" || tab === "history" || tab === "tutor") {
+      therapyStore.setActiveTab(tab);
+    }
+  }, []);
+
   return (
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: highContrastMode ? "#09090b" : "#f8fafc",
-        color: highContrastMode ? "#f4f4f5" : "#0f172a",
+        backgroundColor: highContrastMode ? "var(--input-surface)" : "var(--bg-canvas)",
+        color: "var(--text-primary)",
         fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
@@ -39,17 +49,17 @@ export default function App() {
               flexWrap: "wrap",
               gap: "0.75rem",
               padding: "0.65rem 1.25rem",
-              backgroundColor: highContrastMode ? "#18181b" : "#f1f5f9",
-              border: "1px solid #cbd5e1",
+              backgroundColor: highContrastMode ? "var(--bg-canvas)" : "var(--surface-overlay)",
+              border: "1px solid var(--border-subdued)",
               borderRadius: "8px",
               marginBottom: "1.25rem",
               fontSize: "0.8rem",
             }}
           >
             <div>
-              <strong>Active Session:</strong> Patient Record <code>#pt_8492</code> | Dialect Track: <code>{sourceLanguage.toUpperCase()}-IN</code>
+              <strong style={{ color: "var(--bg-elevated)" }}>Active Session:</strong> Patient Record <code style={{ backgroundColor: "var(--bg-canvas)", padding: "2px 6px", borderRadius: "4px", color: "var(--accent-primary)" }}>#pt_8492</code> | Dialect Track: <code style={{ backgroundColor: "var(--bg-canvas)", padding: "2px 6px", borderRadius: "4px", color: "var(--accent-primary)" }}>{sourceLanguage.toUpperCase()}-IN</code>
             </div>
-            <div style={{ display: "flex", gap: "1.25rem", color: "#475569" }}>
+            <div style={{ display: "flex", gap: "1.25rem", color: "var(--text-secondary)" }}>
               <span>🔒 <strong>Storage:</strong> AES-256 S3 Encrypted</span>
               <span>⚡ <strong>VAD:</strong> Silero 16kHz Real-time</span>
               <span>🧠 <strong>Model:</strong> faster-whisper + IndicTrans2</span>
@@ -77,7 +87,12 @@ export default function App() {
           {activeTab === "history" && (
             <SessionHistoryView />
           )}
+
+          {activeTab === "tutor" && <LiveTutorMode />}
         </main>
+
+        {/* Interactive Bottom Command & Chat Capsule Bar (design.md §3.3) */}
+        <ClinicalCommandBar />
       </div>
     </div>
   );

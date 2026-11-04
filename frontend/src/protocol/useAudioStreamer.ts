@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { therapyStore, useTherapyStore, DiagnosticResult } from "../store/therapyStore";
+import { therapyStore, useTherapyStore } from "../store/therapyStore";
+import type { DiagnosticResult } from "../store/therapyStore";
 
 const floatTo16BitPCM = (float32array: Float32Array): ArrayBuffer => {
   const int16Array = new Int16Array(float32array.length);
@@ -40,6 +41,10 @@ export function useAudioStreamer() {
       therapyStore.setAgentStatus("Connecting to Live AST Engine...");
       therapyStore.setIsProcessing(false);
 
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("MediaDevices API not supported on this browser context.");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -50,14 +55,18 @@ export function useAudioStreamer() {
       });
       streamRef.current = stream;
 
-      // Connect to WebSocket
-      const wsUrl = "ws://localhost:8000/ws/live-ast";
+      // Connect to WebSocket dynamically based on host and environment
+      const isDevPort = window.location.port === "5173";
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = isDevPort
+        ? "ws://localhost:8000/ws/live-ast"
+        : `${wsProtocol}//${window.location.host}/ws/live-ast`;
       const ws = new WebSocket(wsUrl);
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
       ws.onopen = () => {
-        therapyStore.setAgentStatus("Connected. Listening...");
+        therapyStore.setAgentStatus("Connected. Listening (16kHz PCM)...");
         ws.send(
           JSON.stringify({
             action: "configure",
@@ -87,9 +96,9 @@ export function useAudioStreamer() {
         }
       };
 
-      ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-        therapyStore.setAgentStatus("Connection error");
+      ws.onerror = () => {
+        // Fallback gracefully if backend is not started locally
+        therapyStore.setAgentStatus("Acoustic engine offline (Use 'Run SODA Trial Simulation' to test offline)");
       };
 
       ws.onclose = () => {
@@ -99,7 +108,10 @@ export function useAudioStreamer() {
         }
       };
 
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) throw new Error("Web Audio API not supported");
       const audioContext = new AudioContextClass({ sampleRate: 16000 });
       audioContextRef.current = audioContext;
 
@@ -120,8 +132,9 @@ export function useAudioStreamer() {
       processor.connect(audioContext.destination);
       therapyStore.setIsListening(true);
     } catch (err) {
-      console.error("Microphone error:", err);
-      therapyStore.setAgentStatus("Microphone access denied");
+      console.warn("Microphone access notice:", (err as Error).message);
+      therapyStore.setAgentStatus("Microphone inactive. You can use 'Run SODA Trial Simulation' anytime.");
+      therapyStore.setIsListening(false);
     }
   };
 
@@ -137,6 +150,8 @@ export function useAudioStreamer() {
       wsRef.current.send(JSON.stringify({ action: "stop" }));
       therapyStore.setAgentStatus("Analyzing speech with faster-whisper & AST...");
       therapyStore.setIsProcessing(true);
+    } else {
+      therapyStore.setAgentStatus("Recording stopped.");
     }
 
     therapyStore.setIsListening(false);

@@ -1,6 +1,6 @@
-import React from "react";
+import type { HTMLAttributes } from "react";
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "secondary" | "success" | "warning" | "destructive" | "outline";
 }
 
@@ -17,26 +17,57 @@ export const Badge: React.FC<BadgeProps> = ({
       borderRadius: "9999px",
       padding: "0.2rem 0.65rem",
       fontSize: "0.75rem",
-      fontWeight: 600,
+      fontWeight: 500,
       lineHeight: 1,
       transition: "all 0.15s ease",
       letterSpacing: "0.02em",
+      fontFamily: "var(--font-mono)",
     };
 
     switch (variant) {
       case "success":
-        return { ...base, backgroundColor: "#ecfdf5", color: "#065f46", border: "1px solid #a7f3d0" };
+        return {
+          ...base,
+          backgroundColor: "var(--success-bg)",
+          color: "var(--success-text)",
+          border: "1px solid var(--success-border)",
+        };
       case "warning":
-        return { ...base, backgroundColor: "#fffbeb", color: "#92400e", border: "1px solid #fde68a" };
+        return {
+          ...base,
+          backgroundColor: "var(--warn-bg)",
+          color: "var(--warn-text)",
+          border: "1px solid var(--warn-border)",
+        };
       case "destructive":
-        return { ...base, backgroundColor: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" };
+        return {
+          ...base,
+          backgroundColor: "var(--danger-bg)",
+          color: "var(--danger-text)",
+          border: "1px solid var(--danger-border)",
+        };
       case "secondary":
-        return { ...base, backgroundColor: "#f1f5f9", color: "#334155", border: "1px solid #e2e8f0" };
+        return {
+          ...base,
+          backgroundColor: "var(--surface-overlay)",
+          color: "var(--text-secondary)",
+          border: "1px solid var(--border-subdued)",
+        };
       case "outline":
-        return { ...base, backgroundColor: "transparent", color: "#475569", border: "1px solid #cbd5e1" };
+        return {
+          ...base,
+          backgroundColor: "transparent",
+          color: "var(--text-secondary)",
+          border: "1px solid var(--border-standard)",
+        };
       case "default":
       default:
-        return { ...base, backgroundColor: "#0f172a", color: "#ffffff", border: "1px solid #0f172a" };
+        return {
+          ...base,
+          backgroundColor: "var(--bg-elevated)",
+          color: "var(--text-secondary)",
+          border: "1px solid var(--border-standard)",
+        };
     }
   };
 

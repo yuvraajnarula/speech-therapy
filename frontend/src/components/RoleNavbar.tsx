@@ -1,7 +1,7 @@
-import React from "react";
-import { useTherapyStore, therapyStore } from "../store/therapyStore";
+import { useTherapyStore, therapyStore, type TherapyState } from "../store/therapyStore";
 import { Badge } from "./ui/Badge";
-import { Tabs, TabItem } from "./ui/Tabs";
+import { Tabs } from "./ui/Tabs";
+import type { TabItem } from "./ui/Tabs";
 
 export const RoleNavbar: React.FC = () => {
   const userRole = useTherapyStore((s) => s.userRole);
@@ -13,6 +13,7 @@ export const RoleNavbar: React.FC = () => {
   const navTabs: TabItem[] = [
     { id: "trial", label: "Active Speech Trial", icon: "🎙️" },
     { id: "wordbank", label: "Word Bank Explorer", icon: "📖", badge: "20+" },
+    { id: "tutor", label: "Live Tutor", icon: "🎓" },
     { id: "history", label: "SOAP Trial Logs", icon: "📋", badge: trialLogs.length ? String(trialLogs.length) : undefined },
   ];
 
@@ -22,43 +23,45 @@ export const RoleNavbar: React.FC = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "0.75rem",
+        gap: "0.85rem",
         padding: "1rem 1.5rem",
-        backgroundColor: highContrastMode ? "#000000" : "#ffffff",
-        color: highContrastMode ? "#ffffff" : "#0f172a",
-        borderBottom: "1px solid #e2e8f0",
-        borderRadius: "0 0 10px 10px",
+        backgroundColor: highContrastMode ? "var(--input-surface)" : "var(--surface-overlay)",
+        color: "var(--text-primary)",
+        borderBottom: "1px solid var(--border-subdued)",
+        borderRadius: "0 0 12px 12px",
         marginBottom: "1.25rem",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+        boxShadow: "0 2px 8px rgba(28, 25, 23, 0.08)",
       }}
     >
       {/* Top Bar: Brand, HIPAA Badge, Dialect & Mode Selector */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
         {/* Brand & Compliance */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
           <div
             style={{
-              width: "32px",
-              height: "32px",
+              width: "36px",
+              height: "36px",
               borderRadius: "8px",
-              backgroundColor: "#0f172a",
-              color: "#ffffff",
+              backgroundColor: "var(--surface-overlay)",
+              color: "var(--text-primary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "1rem",
+              fontSize: "0.95rem",
               fontWeight: 800,
+              border: "1px solid var(--border-strong)",
+              letterSpacing: "0.05em",
             }}
           >
             SLP
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
-              IndicAST <span style={{ color: "#2563eb" }}>Clinical Studio</span>
+            <h1 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text-primary)" }}>
+              IndicAST <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>Clinical Studio</span>
             </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                AIISH Clinical Articulation Framework
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.15rem" }}>
+              <span style={{ fontSize: "0.72rem", color: "var(--text-tertiary)" }}>
+                AIISH Framework • IndicVoices
               </span>
               <Badge variant="success">HIPAA / GDPR Ready</Badge>
             </div>
@@ -66,24 +69,25 @@ export const RoleNavbar: React.FC = () => {
         </div>
 
         {/* Right Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flexWrap: "wrap" }}>
           {/* Dialect Selector */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <label htmlFor="dialect-select" style={{ fontSize: "0.8rem", fontWeight: 500, color: "#64748b" }}>
-              Target Dialect:
+          <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+            <label htmlFor="dialect-select" style={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--text-secondary)" }}>
+              Dialect:
             </label>
             <select
               id="dialect-select"
               value={sourceLanguage}
-              onChange={(e) => therapyStore.setSourceLanguage(e.target.value as any)}
+              onChange={(e) => therapyStore.setSourceLanguage(e.target.value as TherapyState["sourceLanguage"])}
               style={{
                 padding: "0.35rem 0.65rem",
                 borderRadius: "6px",
-                backgroundColor: "#f8fafc",
-                color: "#0f172a",
-                border: "1px solid #cbd5e1",
+                backgroundColor: "var(--bg-canvas)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-strong)",
                 fontSize: "0.8rem",
                 fontWeight: 500,
+                cursor: "pointer",
               }}
             >
               <option value="hi">Hindi (हिंदी)</option>
@@ -100,10 +104,10 @@ export const RoleNavbar: React.FC = () => {
             aria-label="User role selector"
             style={{
               display: "inline-flex",
-              backgroundColor: "#f1f5f9",
+              backgroundColor: "var(--bg-canvas)",
               borderRadius: "6px",
               padding: "2px",
-              border: "1px solid #e2e8f0",
+              border: "1px solid var(--border-subdued)",
             }}
           >
             <button
@@ -116,9 +120,9 @@ export const RoleNavbar: React.FC = () => {
                 cursor: "pointer",
                 fontSize: "0.8rem",
                 fontWeight: userRole === "patient" ? 600 : 500,
-                backgroundColor: userRole === "patient" ? "#ffffff" : "transparent",
-                color: userRole === "patient" ? "#0f172a" : "#64748b",
-                boxShadow: userRole === "patient" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
+                backgroundColor: userRole === "patient" ? "var(--surface-overlay)" : "transparent",
+                color: userRole === "patient" ? "var(--text-primary)" : "var(--text-tertiary)",
+                boxShadow: userRole === "patient" ? "var(--shadow-lift)" : "none",
               }}
             >
               Patient Mode
@@ -133,16 +137,16 @@ export const RoleNavbar: React.FC = () => {
                 cursor: "pointer",
                 fontSize: "0.8rem",
                 fontWeight: userRole === "therapist" ? 600 : 500,
-                backgroundColor: userRole === "therapist" ? "#ffffff" : "transparent",
-                color: userRole === "therapist" ? "#0f172a" : "#64748b",
-                boxShadow: userRole === "therapist" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
+                backgroundColor: userRole === "therapist" ? "var(--surface-overlay)" : "transparent",
+                color: userRole === "therapist" ? "var(--text-primary)" : "var(--text-tertiary)",
+                boxShadow: userRole === "therapist" ? "var(--shadow-lift)" : "none",
               }}
             >
               Therapist HUD
             </button>
           </div>
 
-          {/* High Contrast */}
+          {/* High Contrast Toggle */}
           <button
             type="button"
             onClick={() => therapyStore.toggleHighContrast()}
@@ -150,25 +154,25 @@ export const RoleNavbar: React.FC = () => {
             style={{
               padding: "0.35rem 0.65rem",
               borderRadius: "6px",
-              border: "1px solid #cbd5e1",
-              backgroundColor: highContrastMode ? "#0f172a" : "#ffffff",
-              color: highContrastMode ? "#ffffff" : "#475569",
+              border: "1px solid var(--border-strong)",
+              backgroundColor: highContrastMode ? "var(--input-surface)" : "var(--bg-canvas)",
+              color: highContrastMode ? "var(--text-primary)" : "var(--text-secondary)",
               fontSize: "0.8rem",
               cursor: "pointer",
               fontWeight: 500,
             }}
           >
-            {highContrastMode ? "Normal A11y" : "High Contrast"}
+            {highContrastMode ? "Normal Slate" : "High Contrast A11y"}
           </button>
         </div>
       </div>
 
       {/* Navigation Tabs Bar */}
-      <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "0.5rem" }}>
+      <div style={{ borderTop: "1px solid var(--border-subdued)", paddingTop: "0.65rem" }}>
         <Tabs
           items={navTabs}
           activeId={activeTab}
-          onChange={(id) => therapyStore.setActiveTab(id as any)}
+          onChange={(id) => therapyStore.setActiveTab(id as TherapyState["activeTab"])}
         />
       </div>
     </header>

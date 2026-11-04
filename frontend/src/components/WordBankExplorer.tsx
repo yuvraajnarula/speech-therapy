@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { INDIC_WORD_BANK, ClinicalWordItem, speakTargetReference } from "../data/indicWordBank";
+import { useState } from "react";
+import { INDIC_WORD_BANK, speakTargetReference } from "../data/indicWordBank";
+import type { ClinicalWordItem } from "../data/indicWordBank";
 import { therapyStore } from "../store/therapyStore";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
@@ -37,7 +38,7 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
 
   const handleSelectWord = (item: ClinicalWordItem) => {
     therapyStore.setTargetWord(item.romanized);
-    therapyStore.setSourceLanguage(item.language === "en-IN" ? "en" : item.language);
+    therapyStore.setSourceLanguage(item.language);
     if (onSelectWord) {
       onSelectWord(item);
     }
@@ -49,21 +50,21 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
         display: "flex",
         flexDirection: "column",
         gap: "1.25rem",
-        backgroundColor: "#ffffff",
+        backgroundColor: "var(--surface-overlay)",
         borderRadius: "12px",
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--border-subdued)",
         padding: "1.5rem",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+        boxShadow: "0 2px 8px rgba(28, 25, 23, 0.10)",
       }}
     >
       {/* Search and Filters Header */}
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "#0f172a" }}>
+            <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700, color: "var(--text-primary)" }}>
               Indic Speech Articulation Word Bank
             </h3>
-            <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "#64748b" }}>
+            <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
               AIISH Clinical Guidelines & IndicVoices articulatory targets with native reference audio
             </p>
           </div>
@@ -83,9 +84,10 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
             style={{
               padding: "0.5rem 0.85rem",
               borderRadius: "6px",
-              border: "1px solid #cbd5e1",
+              border: "1px solid var(--border-strong)",
               fontSize: "0.85rem",
-              color: "#0f172a",
+              backgroundColor: "var(--bg-canvas)",
+              color: "var(--text-primary)",
             }}
           />
 
@@ -96,10 +98,10 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
             style={{
               padding: "0.5rem 0.85rem",
               borderRadius: "6px",
-              border: "1px solid #cbd5e1",
+              border: "1px solid var(--border-strong)",
               fontSize: "0.85rem",
-              backgroundColor: "#ffffff",
-              color: "#0f172a",
+              backgroundColor: "var(--bg-canvas)",
+              color: "var(--text-primary)",
             }}
           >
             <option value="all">All Languages</option>
@@ -117,10 +119,10 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
             style={{
               padding: "0.5rem 0.85rem",
               borderRadius: "6px",
-              border: "1px solid #cbd5e1",
+              border: "1px solid var(--border-strong)",
               fontSize: "0.85rem",
-              backgroundColor: "#ffffff",
-              color: "#0f172a",
+              backgroundColor: "var(--bg-canvas)",
+              color: "var(--text-primary)",
             }}
           >
             <option value="all">All Positions</option>
@@ -151,8 +153,8 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
               justifyContent: "space-between",
               padding: "1rem",
               borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-              backgroundColor: "#f8fafc",
+              border: "1px solid var(--border-subdued)",
+              backgroundColor: "var(--bg-canvas)",
               transition: "border-color 0.15s",
             }}
           >
@@ -162,22 +164,22 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
                 <Badge variant="outline">
                   {item.language.toUpperCase()} • {item.phoneticPosition}
                 </Badge>
-                <span style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600 }}>
+                <span style={{ fontSize: "0.7rem", color: "var(--text-tertiary)", fontWeight: 600 }}>
                   Age: {item.developmentalAgeYears}y+
                 </span>
               </div>
 
               {/* Word Display */}
               <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                <span style={{ fontSize: "1.5rem", fontWeight: 700, color: "#0f172a" }}>
+                <span style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--text-primary)" }}>
                   {item.nativeScript}
                 </span>
-                <span style={{ fontSize: "1rem", fontWeight: 600, color: "#475569" }}>
+                <span style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-secondary)" }}>
                   "{item.romanized}"
                 </span>
               </div>
 
-              <div style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: "0.5rem" }}>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
                 Meaning: <em>{item.englishMeaning}</em>
               </div>
 
@@ -189,55 +191,59 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
                   gap: "0.5rem",
                   fontFamily: "ui-monospace, monospace",
                   fontSize: "0.8rem",
-                  color: "#2563eb",
+                  color: "var(--accent-primary)",
                   marginBottom: "0.5rem",
                 }}
               >
                 <span>{item.ipa}</span>
-                <span style={{ color: "#cbd5e1" }}>|</span>
-                <span style={{ color: "#64748b", fontFamily: "inherit" }}>
+                <span style={{ color: "var(--text-secondary)" }}>|</span>
+                <span style={{ color: "var(--text-secondary)", fontFamily: "inherit" }}>
                   Target: <strong>{item.phonemeTarget}</strong>
                 </span>
               </div>
 
-              {/* Clinical Cue */}
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  color: "#475569",
-                  backgroundColor: "#ffffff",
-                  padding: "0.45rem 0.6rem",
-                  borderRadius: "4px",
-                  border: "1px solid #e2e8f0",
-                  lineHeight: 1.4,
-                  margin: "0.5rem 0",
-                }}
-              >
-                💡 <strong>Cue:</strong> {item.clinicalCue}
+              <p style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", margin: "0 0 0.85rem", lineHeight: 1.4 }}>
+                {item.clinicalCue}
               </p>
             </div>
 
-            {/* Actions Bar */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.75rem", paddingTop: "0.5rem", borderTop: "1px solid #e2e8f0" }}>
+            {/* Action Buttons */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", borderTop: "1px solid var(--border-standard)", paddingTop: "0.75rem" }}>
               <div style={{ display: "flex", gap: "0.35rem" }}>
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => handlePlayAudio(item, 1.0)}
                   disabled={playingId === item.id}
-                  title="Hear model standard pronunciation"
+                  style={{
+                    padding: "0.3rem 0.55rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--border-subdued)",
+                    backgroundColor: "var(--surface-overlay)",
+                    color: "var(--pill-text)",
+                    fontSize: "0.75rem",
+                    cursor: "pointer",
+                  }}
+                  title="Play standard model reference audio"
                 >
                   🔊 1.0x
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
+                </button>
+                <button
+                  type="button"
                   onClick={() => handlePlayAudio(item, 0.75)}
                   disabled={playingId === item.id}
-                  title="Hear slow articulatory drill"
+                  style={{
+                    padding: "0.3rem 0.55rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--border-subdued)",
+                    backgroundColor: "var(--surface-overlay)",
+                    color: "var(--pill-text)",
+                    fontSize: "0.75rem",
+                    cursor: "pointer",
+                  }}
+                  title="Play slow articulatory model audio"
                 >
                   🐢 0.75x
-                </Button>
+                </button>
               </div>
 
               <Button
@@ -245,7 +251,7 @@ export const WordBankExplorer: React.FC<WordBankExplorerProps> = ({ onSelectWord
                 size="sm"
                 onClick={() => handleSelectWord(item)}
               >
-                Practice ➔
+                Select Target ➔
               </Button>
             </div>
           </div>
