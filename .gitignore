@@ -1,2 +1,12 @@
 *.wav
 *.csv
+.kaaraj/
+__pycache__
+*.pyc
+.env
+node_modules
+*.db
+frontend/test-results/
+frontend/playwright-report/
+frontend/dist/
+.openqodex/
