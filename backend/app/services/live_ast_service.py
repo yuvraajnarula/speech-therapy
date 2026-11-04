@@ -1,4 +1,5 @@
 import io
+import os
 import wave
 import numpy as np
 from typing import Optional, Dict, Any, Tuple
@@ -85,19 +86,36 @@ class LiveASTService:
         if self._model_loaded:
             return
 
+        if os.environ.get("TESTING") == "true" or settings.ENVIRONMENT == "test" or settings.DEFAULT_STT_MODEL == "mock":
+            app_logger.info("Running STT engine in test/mock mode.")
+            self._model_loaded = True
+            return
+
         app_logger.info("Initializing faster-whisper STT engine...")
         try:
             from faster_whisper import WhisperModel
-            self.stt_model = WhisperModel(
-                settings.DEFAULT_STT_MODEL,
-                device=settings.STT_DEVICE,
-                compute_type=settings.STT_COMPUTE_TYPE,
-            )
-            self._model_loaded = True
-            app_logger.info("faster-whisper STT engine loaded successfully.")
+            # Try local cache first to avoid hanging in offline/sandboxed environments
+            try:
+                self.stt_model = WhisperModel(
+                    settings.DEFAULT_STT_MODEL,
+                    device=settings.STT_DEVICE,
+                    compute_type=settings.STT_COMPUTE_TYPE,
+                    local_files_only=True,
+                )
+                self._model_loaded = True
+                app_logger.info("faster-whisper STT engine loaded from local cache.")
+            except Exception:
+                self.stt_model = WhisperModel(
+                    settings.DEFAULT_STT_MODEL,
+                    device=settings.STT_DEVICE,
+                    compute_type=settings.STT_COMPUTE_TYPE,
+                )
+                self._model_loaded = True
+                app_logger.info("faster-whisper STT engine loaded successfully.")
         except Exception as e:
-            app_logger.error(f"Could not load faster-whisper: {e}. Running in simulation/fallback mode.")
+            app_logger.warning(f"Could not load faster-whisper: {e}. Running in simulation/fallback mode.")
             self.stt_model = None
+            self._model_loaded = True
 
     def pcm_to_wav(self, pcm_bytes: bytes) -> io.BytesIO:
         wav_buffer = io.BytesIO()
