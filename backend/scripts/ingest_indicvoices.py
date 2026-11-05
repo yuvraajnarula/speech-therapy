@@ -263,6 +263,8 @@ def ingest_language(code: str, lang_dir: Path, out_dir: Path, args: argparse.Nam
     if not args.dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
         for split, split_rows in buckets.items():
+            if not split_rows:
+                continue
             out_path = out_dir / f"manifest_{code}_{split}.jsonl"
             with open(out_path, "w", encoding="utf-8") as f:
                 for record in split_rows:
