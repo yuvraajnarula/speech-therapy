@@ -1,0 +1,25 @@
+[project]
+name = "backend"
+version = "2.0.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["app", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "C4", "UP", "PIE", "PL", "S", "C90", "G"]
+ignore = ["E501", "B008", "S101", "S105", "S106", "S107", "S108", "S113", "S311", "S601", "S602", "S603", "S604", "S605", "S607", "S608", "S609", "S701"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+ignore_missing_imports = true
+follow_imports = "normal"

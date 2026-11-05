@@ -11,7 +11,9 @@ import uvicorn
 from backend.app.core.config import settings
 from backend.app.core.logging import app_logger, audit_logger
 from backend.app.core.security import decode_access_token
-from backend.app.db.session import init_db
+from backend.app.db.session import init_db, engine
+from backend.app.db.models import User
+from sqlalchemy import select, text
 from backend.app.api.auth import router as auth_router
 from backend.app.api.sessions import router as sessions_router
 from backend.app.api.exercises import router as exercises_router
@@ -166,10 +168,30 @@ app.include_router(memory_router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 async def health_check():
+    deps = {}
+    overall = "healthy"
+
+    # Database connectivity
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        deps["database"] = "ok"
+    except Exception as e:
+        deps["database"] = f"error: {type(e).__name__}"
+        overall = "degraded"
+
+    # Redis / memory service
+    if memory_service._redis_available:
+        deps["redis"] = "ok"
+    else:
+        deps["redis"] = "unavailable (in-memory fallback)"
+        overall = "degraded"
+
     return {
-        "status": "healthy",
+        "status": overall,
         "service": settings.PROJECT_NAME,
         "environment": settings.ENVIRONMENT,
+        "dependencies": deps,
     }
 
 

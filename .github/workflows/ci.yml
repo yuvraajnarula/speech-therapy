@@ -223,6 +223,18 @@ jobs:
         env:
           TESTING: "true"
 
+      - name: Run Ruff Lint
+        run: |
+          ruff check app tests scripts || true
+
+      - name: Run Ruff Format Check
+        run: |
+          ruff format --check app tests scripts || true
+
+      - name: Run MyPy Type Check
+        run: |
+          mypy app || true
+
   frontend-build:
     name: Frontend Lint & Production Build
     runs-on: ubuntu-latest

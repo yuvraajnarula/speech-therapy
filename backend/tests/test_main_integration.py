@@ -132,8 +132,10 @@ def test_health_check(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "healthy"
+    assert data["status"] in ("healthy", "degraded")
     assert data["service"] == "Enterprise Speech Therapy MBP"
+    assert "dependencies" in data
+    assert data["dependencies"]["database"] == "ok"
 
 
 # ---------------------------------------------------------------------------
