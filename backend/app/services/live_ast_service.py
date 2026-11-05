@@ -1,14 +1,16 @@
 import io
 import os
 import wave
+from typing import Any
+
 import numpy as np
-from typing import Optional, Dict, Any, Tuple
+
 from backend.app.core.config import settings
 from backend.app.core.logging import app_logger
 from backend.app.services.phonetics_engine import phonetics_engine
 
 # Indic translation dictionary for clinical and everyday speech therapy phrases
-INDIC_TRANSLATIONS: Dict[Tuple[str, str], Dict[str, str]] = {
+INDIC_TRANSLATIONS: dict[tuple[str, str], dict[str, str]] = {
     ("hi", "en"): {
         "नमस्ते": "Hello / Greetings",
         "मुझे पानी चाहिए": "I need water",
@@ -127,7 +129,7 @@ class LiveASTService:
         wav_buffer.seek(0)
         return wav_buffer
 
-    def transcribe(self, pcm_bytes: bytes, language: Optional[str] = None) -> str:
+    def transcribe(self, pcm_bytes: bytes, language: str | None = None) -> str:
         self.load_model()
         if not pcm_bytes:
             return ""
@@ -184,7 +186,7 @@ class LiveASTService:
         target_text: str,
         source_language: str = "en",
         target_language: str = "en"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Full end-to-end AST & Diagnostic pipeline execution.
         """

@@ -1,21 +1,18 @@
-from datetime import timedelta
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.core.config import settings
+from backend.app.core.logging import audit_logger
 from backend.app.core.security import (
-    verify_password,
-    get_password_hash,
+    TokenPayload,
     create_access_token,
     get_current_user,
-    TokenPayload,
+    get_password_hash,
+    verify_password,
 )
+from backend.app.db.models import ConsentRecord, User
 from backend.app.db.session import get_db
-from backend.app.db.models import User, ConsentRecord
-from backend.app.core.logging import audit_logger
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

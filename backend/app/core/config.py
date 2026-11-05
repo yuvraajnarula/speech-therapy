@@ -1,5 +1,3 @@
-import os
-from typing import Dict, List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,11 +38,11 @@ class Settings(BaseSettings):
     # Storage
     STORAGE_BACKEND: str = "local"  # "local", "s3", or "gcs"
     LOCAL_STORAGE_DIR: str = "./dataset/audio_store"
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_REGION: str = "us-east-1"
     S3_BUCKET_NAME: str = "speech-therapy-clinical-audio"
-    S3_ENDPOINT_URL: Optional[str] = None
+    S3_ENDPOINT_URL: str | None = None
 
     # HIPAA / Healthcare Compliance
     ENABLE_HIPAA_LOG_REDACTION: bool = True
@@ -61,15 +59,15 @@ class Settings(BaseSettings):
 
     # MLOps
     MLOPS_TRACKER: str = "local"  # "local", "wandb", "mlflow"
-    WANDB_API_KEY: Optional[str] = None
+    WANDB_API_KEY: str | None = None
     WANDB_PROJECT: str = "speech-therapy-ast"
-    MLFLOW_TRACKING_URI: Optional[str] = None
+    MLFLOW_TRACKING_URI: str | None = None
 
 
 settings = Settings()
 
 
-def _parse_json_dict(value: str) -> Dict[str, str]:
+def _parse_json_dict(value: str) -> dict[str, str]:
     """Parse a JSON string into a dict, returning {} on failure."""
     import json
     try:
@@ -81,7 +79,7 @@ def _parse_json_dict(value: str) -> Dict[str, str]:
     return {}
 
 
-def _parse_csv_list(value: str) -> List[str]:
+def _parse_csv_list(value: str) -> list[str]:
     """Parse a comma-separated string into a list of stripped values."""
     if not value:
         return []
@@ -94,26 +92,26 @@ def _parse_csv_list(value: str) -> List[str]:
 # so these are exposed as plain functions instead of `settings.*` attributes.
 # ---------------------------------------------------------------------------
 
-def get_oidc_jwks_url(provider: str) -> Optional[str]:
+def get_oidc_jwks_url(provider: str) -> str | None:
     """Return the JWKS URL for the given provider, or None if not configured."""
     return _parse_json_dict(settings.OIDC_JWKS_URLS).get(provider)
 
 
-def get_oidc_client_id(provider: str) -> Optional[str]:
+def get_oidc_client_id(provider: str) -> str | None:
     """Return the client ID for the given provider, or None if not configured."""
     return _parse_json_dict(settings.OIDC_CLIENT_IDS).get(provider)
 
 
-def get_oidc_issuer(provider: str) -> Optional[str]:
+def get_oidc_issuer(provider: str) -> str | None:
     """Return the issuer URL for the given provider, or None if not configured."""
     return _parse_json_dict(settings.OIDC_ISSUERS).get(provider)
 
 
-def oidc_enabled_providers() -> List[str]:
+def oidc_enabled_providers() -> list[str]:
     """List of enabled enterprise identity providers."""
     return _parse_csv_list(settings.OIDC_ENABLED_PROVIDERS)
 
 
-def clinician_email_domains() -> List[str]:
+def clinician_email_domains() -> list[str]:
     """Email domains allowed to self-identify as clinicians."""
     return _parse_csv_list(settings.CLINICIAN_EMAIL_DOMAINS)

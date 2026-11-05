@@ -1,13 +1,12 @@
-from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
 
-from backend.app.core.security import get_current_user, require_roles, TokenPayload
-from backend.app.db.session import get_db
-from backend.app.db.models import TherapySession, User, ExerciseAttempt
 from backend.app.core.logging import audit_logger
+from backend.app.core.security import TokenPayload, get_current_user, require_roles
+from backend.app.db.models import ExerciseAttempt, TherapySession, User
+from backend.app.db.session import get_db
 
 router = APIRouter(prefix="/sessions", tags=["Therapy Sessions"])
 
@@ -15,7 +14,7 @@ router = APIRouter(prefix="/sessions", tags=["Therapy Sessions"])
 class CreateSessionSchema(BaseModel):
     patient_id: str
     target_language: str = "hi"
-    clinical_notes: Optional[str] = None
+    clinical_notes: str | None = None
 
 
 class SessionResponseSchema(BaseModel):
@@ -24,7 +23,7 @@ class SessionResponseSchema(BaseModel):
     patient_id: str
     target_language: str
     status: str
-    clinical_notes: Optional[str] = None
+    clinical_notes: str | None = None
     created_at: str
 
 

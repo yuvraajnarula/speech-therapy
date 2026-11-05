@@ -1,9 +1,8 @@
-import os
 import hashlib
 from pathlib import Path
-from typing import Optional, Tuple
+
 from backend.app.core.config import settings
-from backend.app.core.logging import audit_logger, app_logger
+from backend.app.core.logging import app_logger, audit_logger
 
 
 class BaseStorageService:
@@ -22,7 +21,7 @@ class LocalStorageService(BaseStorageService):
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    def _get_anonymized_path(self, audio_bytes: bytes, prefix: str) -> Tuple[Path, str]:
+    def _get_anonymized_path(self, audio_bytes: bytes, prefix: str) -> tuple[Path, str]:
         # Hash contents for HIPAA-safe de-identified storage
         sha256 = hashlib.sha256(audio_bytes).hexdigest()[:16]
         filename = f"{prefix}_{sha256}.wav"

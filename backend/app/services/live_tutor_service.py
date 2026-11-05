@@ -22,10 +22,10 @@ Consumed by:
 from __future__ import annotations
 
 import random
-from typing import Any, Optional
+from typing import Any
 
 from backend.app.core.logging import app_logger
-from backend.app.services.memory_service import memory_service, TutorContext
+from backend.app.services.memory_service import TutorContext, memory_service
 
 # ---------------------------------------------------------------------------
 # Indic word bank for Live Tutor target selection (backend mirror of frontend)
@@ -146,10 +146,10 @@ class LiveTutorSession:
     """
 
     def __init__(self) -> None:
-        self.patient_id: Optional[str] = None
+        self.patient_id: str | None = None
         self.dialect: str = "hi"
         self.audio_buffer = bytearray()
-        self.current_target: Optional[dict] = None
+        self.current_target: dict | None = None
         self.score = {"correct": 0, "total": 0}
 
     @property

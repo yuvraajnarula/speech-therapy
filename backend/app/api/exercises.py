@@ -1,18 +1,18 @@
-import json
 import base64
-from typing import Optional, List
+import json
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.core.security import get_current_user, require_roles, TokenPayload
-from backend.app.db.session import get_db
-from backend.app.db.models import ExerciseAttempt, TherapySession, ConsentRecord
-from backend.app.services.live_ast_service import live_ast_service
-from backend.app.services.storage_service import storage_service
-from backend.app.services.mlops_pipeline import mlops_pipeline
 from backend.app.core.logging import audit_logger
+from backend.app.core.security import TokenPayload, get_current_user, require_roles
+from backend.app.db.models import ConsentRecord, ExerciseAttempt, TherapySession
+from backend.app.db.session import get_db
+from backend.app.services.live_ast_service import live_ast_service
+from backend.app.services.mlops_pipeline import mlops_pipeline
+from backend.app.services.storage_service import storage_service
 
 router = APIRouter(prefix="/exercises", tags=["Exercises & Analytics"])
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/exercises", tags=["Exercises & Analytics"])
 class ExerciseEvaluateRequest(BaseModel):
     session_id: str
     target_phrase: str
-    audio_base64: Optional[str] = None
+    audio_base64: str | None = None
     source_language: str = "hi"
     target_language: str = "en"
 

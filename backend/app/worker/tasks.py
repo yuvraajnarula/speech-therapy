@@ -9,14 +9,14 @@ All tasks are designed to be:
 from __future__ import annotations
 
 import json
-import logging
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+from logging import getLogger
 from typing import Any
 
 from backend.app.worker.celery_app import celery_app
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -39,11 +39,13 @@ def export_sft_dataset_task(self, session_id: str, format: str = "jsonl") -> dic
 
         # Import here to avoid circular imports at module load
         import asyncio
-        from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-        from sqlalchemy.orm import sessionmaker
+
         from sqlalchemy import select
-        from backend.app.db.models import ExerciseAttempt
+        from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+        from sqlalchemy.orm import sessionmaker
+
         from backend.app.core.config import settings
+        from backend.app.db.models import ExerciseAttempt
 
         async def _do_export():
             engine = create_async_engine(settings.DATABASE_URL, echo=False)
@@ -67,7 +69,7 @@ def export_sft_dataset_task(self, session_id: str, format: str = "jsonl") -> dic
 
             export_dir = "dataset/anonymized_exports"
             os.makedirs(export_dir, exist_ok=True)
-            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
             export_path = f"{export_dir}/sft_{session_id[:8]}_{ts}.jsonl"
 
             with open(export_path, "w", encoding="utf-8") as f:
@@ -104,11 +106,13 @@ def run_batch_analytics_task(self, patient_id: str, dialect: str = "hi") -> dict
         logger.info(f"[Batch Analytics] Running for patient_hash={patient_id[:8]}, dialect={dialect}")
 
         import asyncio
-        from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-        from sqlalchemy.orm import sessionmaker
+
         from sqlalchemy import select
-        from backend.app.db.models import ExerciseAttempt, TherapySession
+        from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+        from sqlalchemy.orm import sessionmaker
+
         from backend.app.core.config import settings
+        from backend.app.db.models import ExerciseAttempt, TherapySession
         from backend.app.services.memory_service import memory_service
 
         async def _do_analytics():
@@ -183,17 +187,19 @@ def cleanup_expired_audio_task(retention_days: int = 90) -> dict[str, Any]:
     logger.info(f"[Audio Cleanup] Starting retention sweep (>{retention_days} days)")
 
     import asyncio
-    from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.orm import sessionmaker
+
     from sqlalchemy import select
-    from backend.app.db.models import ExerciseAttempt, TherapySession, ConsentRecord
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+    from sqlalchemy.orm import sessionmaker
+
     from backend.app.core.config import settings
+    from backend.app.db.models import ConsentRecord, ExerciseAttempt, TherapySession
     from backend.app.services.storage_service import storage_service
 
     async def _do_cleanup():
         engine = create_async_engine(settings.DATABASE_URL, echo=False)
         async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        cutoff = datetime.now(UTC) - timedelta(days=retention_days)
         deleted = 0
 
         async with async_session() as db:

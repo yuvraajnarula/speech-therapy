@@ -13,13 +13,12 @@ Endpoints:
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.core.security import TokenPayload, decode_access_token
 from backend.app.db.session import get_db
-from backend.app.services.memory_service import memory_service, PatientMemory, TutorContext
-
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from backend.app.services.memory_service import PatientMemory, TutorContext, memory_service
 
 router = APIRouter(prefix="/memory", tags=["Patient Memory"])
 

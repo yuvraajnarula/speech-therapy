@@ -1,32 +1,27 @@
-import asyncio
 import json
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, status
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
+from backend.app.api.auth import router as auth_router
+from backend.app.api.exercises import router as exercises_router
+from backend.app.api.memory import router as memory_router
+from backend.app.api.sessions import router as sessions_router
 from backend.app.core.config import settings
 from backend.app.core.logging import app_logger, audit_logger
 from backend.app.core.security import decode_access_token
-from backend.app.db.session import init_db, engine
-from backend.app.db.models import User
-from sqlalchemy import select, text
-from backend.app.api.auth import router as auth_router
-from backend.app.api.sessions import router as sessions_router
-from backend.app.api.exercises import router as exercises_router
-from backend.app.api.memory import router as memory_router
+from backend.app.db.session import engine, init_db
 from backend.app.services.live_ast_service import live_ast_service
-from backend.app.services.phonetics_engine import phonetics_engine
-from backend.app.services.storage_service import storage_service
-from backend.app.services.memory_service import memory_service  # noqa: F401 (memory layer singleton)
 from backend.app.services.live_tutor_service import (
     LiveTutorSession,
     get_adaptive_target,
 )
-
+from backend.app.services.memory_service import memory_service  # noqa: F401 (memory layer singleton)
+from backend.app.services.storage_service import storage_service
 
 # ==============================================================================
 # App Lifespan
@@ -68,12 +63,12 @@ app = FastAPI(
 # OpenTelemetry Instrumentation
 # ---------------------------------------------------------------------------
 try:
+    from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-    from opentelemetry import trace
 
     _otel_resource = Resource.create(
         {
@@ -102,8 +97,8 @@ except Exception as _otel_err:
 # Prometheus Instrumentation
 # ---------------------------------------------------------------------------
 try:
+    from prometheus_client import Counter, Gauge, Histogram
     from prometheus_fastapi_instrumentator import Instrumentator
-    from prometheus_client import Counter, Histogram, Gauge
 
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
@@ -137,10 +132,10 @@ except Exception as _prom_err:
         def observe(self, *a, **k): pass
         def set(self, *a, **k): pass
 
-    WS_ACTIVE_CONNECTIONS = _NoopMetric()
-    AST_INFERENCE_LATENCY = _NoopMetric()
-    PHONEME_ERROR_TOTAL = _NoopMetric()
-    TUTOR_SESSION_TOTAL = _NoopMetric()
+    WS_ACTIVE_CONNECTIONS = _NoopMetric()  # type: ignore[assignment]
+    AST_INFERENCE_LATENCY = _NoopMetric()  # type: ignore[assignment]
+    PHONEME_ERROR_TOTAL = _NoopMetric()  # type: ignore[assignment]
+    TUTOR_SESSION_TOTAL = _NoopMetric()  # type: ignore[assignment]
 
 # ---------------------------------------------------------------------------
 # CORS — strict origin allow-list (comma-separated CORS_ORIGINS env var).
@@ -202,7 +197,7 @@ async def health_check():
 @app.websocket("/ws/live-ast")
 async def live_ast_websocket(
     websocket: WebSocket,
-    token: Optional[str] = Query(None)
+    token: str | None = Query(None)
 ):
     """
     High-performance real-time WebSocket for Indian dialect speech therapy:
@@ -335,7 +330,7 @@ async def live_ast_websocket(
 @app.websocket("/ws/live-tutor")
 async def live_tutor_websocket(
     websocket: WebSocket,
-    token: Optional[str] = Query(None),
+    token: str | None = Query(None),
 ):
     """
     Adaptive real-time tutoring WebSocket.

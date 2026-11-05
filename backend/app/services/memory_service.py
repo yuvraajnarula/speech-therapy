@@ -17,14 +17,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from logging import getLogger
 from typing import Any
 
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Data Models
@@ -45,7 +45,7 @@ class PatientMemory(BaseModel):
     last_updated: str                      # ISO 8601
 
     @classmethod
-    def empty(cls, patient_id: str, dialect: str) -> "PatientMemory":
+    def empty(cls, patient_id: str, dialect: str) -> PatientMemory:
         return cls(
             patient_id=patient_id,
             dialect=dialect,
@@ -57,7 +57,7 @@ class PatientMemory(BaseModel):
             total_attempts=0,
             consecutive_correct=0,
             consecutive_incorrect=0,
-            last_updated=datetime.now(timezone.utc).isoformat(),
+            last_updated=datetime.now(UTC).isoformat(),
         )
 
 
@@ -99,7 +99,7 @@ class MemoryService:
         """Attempt to establish Redis connection; fall back to in-memory silently."""
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
         try:
-            import redis.asyncio as aioredis  # type: ignore[import-untyped]
+            import redis.asyncio as aioredis
             client = aioredis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
             await client.ping()
             self._redis = client
@@ -220,7 +220,7 @@ class MemoryService:
             "target": target,
             "spoken": spoken,
             "is_correct": is_correct,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         })
         mem.recent_utterances = mem.recent_utterances[-10:]
 
@@ -234,7 +234,7 @@ class MemoryService:
 
         # 6. Update totals
         mem.total_attempts += 1
-        mem.last_updated = datetime.now(timezone.utc).isoformat()
+        mem.last_updated = datetime.now(UTC).isoformat()
 
         await self._save(mem, patient_id, dialect)
         return mem
@@ -243,7 +243,7 @@ class MemoryService:
         """Increment total_sessions counter when a new therapy session starts."""
         mem = await self._load(patient_id, dialect)
         mem.total_sessions += 1
-        mem.last_updated = datetime.now(timezone.utc).isoformat()
+        mem.last_updated = datetime.now(UTC).isoformat()
         await self._save(mem, patient_id, dialect)
 
     async def bulk_update_analytics(
@@ -261,7 +261,7 @@ class MemoryService:
         mem.phoneme_errors = phoneme_errors
         mem.mastery_scores = mastery_scores
         mem.weak_phonemes_ranked = sorted(phoneme_errors, key=phoneme_errors.get, reverse=True)  # type: ignore
-        mem.last_updated = datetime.now(timezone.utc).isoformat()
+        mem.last_updated = datetime.now(UTC).isoformat()
         await self._save(mem, patient_id, dialect)
 
     async def reset_memory(self, patient_id: str, dialect: str) -> PatientMemory:

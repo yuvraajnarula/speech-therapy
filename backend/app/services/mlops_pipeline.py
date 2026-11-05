@@ -1,11 +1,10 @@
 import json
-import os
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 from backend.app.core.config import settings
-from backend.app.core.logging import audit_logger, app_logger
+from backend.app.core.logging import app_logger, audit_logger
 
 
 class MLOpsPipeline:
@@ -45,7 +44,7 @@ class MLOpsPipeline:
         per: float,
         dialect: str,
         total_samples: int,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: dict[str, Any] | None = None
     ):
         """Log speech metrics across dialects."""
         metrics = {
@@ -76,7 +75,7 @@ class MLOpsPipeline:
 
     def export_anonymized_sft_dataset(
         self,
-        attempts: List[Dict[str, Any]],
+        attempts: list[dict[str, Any]],
         output_filename: str = "sarvam_sft_dataset.jsonl"
     ) -> Path:
         """

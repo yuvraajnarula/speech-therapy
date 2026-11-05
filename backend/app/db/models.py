@@ -1,14 +1,14 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import (
-    Column,
-    String,
     Boolean,
+    Column,
     DateTime,
-    ForeignKey,
-    Text,
     Float,
-    Integer,
+    ForeignKey,
+    String,
+    Text,
 )
 from sqlalchemy.orm import relationship
 
@@ -20,7 +20,7 @@ def generate_uuid() -> str:
 
 
 def get_utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class User(Base):

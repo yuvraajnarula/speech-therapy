@@ -1,7 +1,6 @@
 import difflib
-import re
 import string
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 try:
     import pronouncing
@@ -9,7 +8,7 @@ except ImportError:
     pronouncing = None
 
 # Phonetic guides for UI display & clinical feedback
-PHONEME_ARTICULATION_GUIDE: Dict[str, str] = {
+PHONEME_ARTICULATION_GUIDE: dict[str, str] = {
     "HH": "H (breath from throat)",
     "T": "T (alveolar tongue tap)",
     "TR": "T (retroflex tongue curl - Indic accent)",
@@ -105,13 +104,13 @@ class PhoneticsDiagnosticEngine:
 
         return phoneme_string
 
-    def analyze(self, target_text: str, spoken_text: str, language: str = "en") -> Dict[str, Any]:
+    def analyze(self, target_text: str, spoken_text: str, language: str = "en") -> dict[str, Any]:
         target_phonemes = self.clean_phonemes(target_text, language=language)
         spoken_phonemes = self.clean_phonemes(spoken_text, language=language)
 
         matcher = difflib.SequenceMatcher(None, target_phonemes, spoken_phonemes)
 
-        errors: List[Dict[str, str]] = []
+        errors: list[dict[str, str]] = []
         is_correct = True
         target_achieved = False
 
@@ -166,7 +165,7 @@ class PhoneticsDiagnosticEngine:
         spoken_text: str,
         target_phonemes: str,
         spoken_phonemes: str,
-        errors: List[Dict[str, str]],
+        errors: list[dict[str, str]],
         target_achieved: bool,
         is_correct: bool,
     ) -> str:

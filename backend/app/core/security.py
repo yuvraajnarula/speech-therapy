@@ -1,22 +1,25 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+
 try:
     import jwt
     from jwt import PyJWTError as JWTError
 except ImportError:
-    from jose import JWTError, jwt
+    from jose import JWTError, jwt  # type: ignore[no-redef]
 import bcrypt
 import httpx
 from pydantic import BaseModel
+
 from backend.app.core.config import (
-    settings,
     clinician_email_domains,
     get_oidc_client_id,
     get_oidc_issuer,
     get_oidc_jwks_url,
     oidc_enabled_providers,
+    settings,
 )
 from backend.app.core.logging import audit_logger
 
@@ -32,12 +35,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login
 # ---------------------------------------------------------------------------
 
 # In-memory JWKS cache keyed by provider name
-_JWKS_CACHE: Dict[str, Dict[str, Any]] = {}
+_JWKS_CACHE: dict[str, dict[str, Any]] = {}
 _JWKS_TTL_SECONDS = 3600  # refresh JWKS every hour
-_JWKS_LAST_FETCH: Dict[str, datetime] = {}
+_JWKS_LAST_FETCH: dict[str, datetime] = {}
 
 
-async def _fetch_jwks(provider_name: str, jwks_url: str) -> Dict[str, Any]:
+async def _fetch_jwks(provider_name: str, jwks_url: str) -> dict[str, Any]:
     """
     Fetch the JSON Web Key Set (JWKS) from the identity provider.
     Cached in-memory to avoid hitting the IdP on every token validation.
@@ -45,7 +48,7 @@ async def _fetch_jwks(provider_name: str, jwks_url: str) -> Dict[str, Any]:
     cached = _JWKS_CACHE.get(provider_name)
     last_fetch = _JWKS_LAST_FETCH.get(provider_name)
     if cached and last_fetch:
-        if (datetime.now(timezone.utc) - last_fetch).total_seconds() < _JWKS_TTL_SECONDS:
+        if (datetime.now(UTC) - last_fetch).total_seconds() < _JWKS_TTL_SECONDS:
             return cached
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(5.0)) as client:
@@ -54,7 +57,7 @@ async def _fetch_jwks(provider_name: str, jwks_url: str) -> Dict[str, Any]:
         jwks = response.json()
 
     _JWKS_CACHE[provider_name] = jwks
-    _JWKS_LAST_FETCH[provider_name] = datetime.now(timezone.utc)
+    _JWKS_LAST_FETCH[provider_name] = datetime.now(UTC)
     return jwks
 
 
@@ -64,7 +67,7 @@ class TokenPayload(BaseModel):
     exp: int
 
 
-def _get_signing_key(token: str, jwks: Dict[str, Any]) -> Optional[str]:
+def _get_signing_key(token: str, jwks: dict[str, Any]) -> dict[str, Any] | None:
     """
     Extract the unverified header from the JWT to find the key ID (kid),
     then look up the matching public key in the JWKS.
@@ -82,7 +85,7 @@ def _get_signing_key(token: str, jwks: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-async def decode_oidc_token(token: str, provider_name: str) -> Optional[TokenPayload]:
+async def decode_oidc_token(token: str, provider_name: str) -> TokenPayload | None:
     """
     Validate a JWT issued by an enterprise OIDC identity provider using its
     JWKS endpoint. Returns a TokenPayload on success, None on failure.
@@ -129,7 +132,7 @@ async def decode_oidc_token(token: str, provider_name: str) -> Optional[TokenPay
         return None
 
 
-def _map_oidc_role(payload: Dict[str, Any], email: str) -> str:
+def _map_oidc_role(payload: dict[str, Any], email: str) -> str:
     """
     Map enterprise identity provider claims to platform roles.
 
@@ -182,11 +185,11 @@ def get_password_hash(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8")[:72], salt).decode("utf-8")
 
 
-def create_access_token(subject: str, role: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(subject: str, role: str, expires_delta: timedelta | None = None) -> str:
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {"sub": subject, "role": role, "exp": int(expire.timestamp())}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
@@ -207,9 +210,9 @@ async def decode_access_token(token: str) -> TokenPayload:
     # Try platform HS256 token first
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        sub: str = payload.get("sub")
-        role: str = payload.get("role")
-        exp: int = payload.get("exp")
+        sub: str = cast(str, payload.get("sub"))
+        role: str = cast(str, payload.get("role"))
+        exp: int = cast(int, payload.get("exp"))
         if sub is None or role is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -234,7 +237,7 @@ async def decode_access_token(token: str) -> TokenPayload:
     )
 
 
-async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> TokenPayload:
+async def get_current_user(token: str | None = Depends(oauth2_scheme)) -> TokenPayload:
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -244,7 +247,7 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> Tok
     return await decode_access_token(token)
 
 
-def require_roles(allowed_roles: List[str]):
+def require_roles(allowed_roles: list[str]):
     """Role-Based Access Control (RBAC) dependency factory."""
     async def role_checker(current_user: TokenPayload = Depends(get_current_user)) -> TokenPayload:
         if current_user.role not in allowed_roles:
