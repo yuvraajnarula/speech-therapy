@@ -70,8 +70,129 @@ jobs:
           assert s["modes"]["en-In:error_mode"] == 1
           assert s["error_type_coverage"]
           PY
-          rm -rf tmp_legacy_test tmp_legacy_ingest tmp_legacy_sft
-
+          python -m py_compile backend/scripts/ingest_indicvoices.py
+          python -m py_compile backend/scripts/annotate_pairs.py
+          python -m pytest -o pythonpath=. backend/tests/test_ingest_indicvoices.py -q
+          
+          # End-to-end smoke (two column-name variants) for the dataset scripts.
+          # Variant A: column auto-detection (stem-scan audio). Variant B: explicit
+          # --id-col / --text-col / --audio-col overrides with column names that do NOT
+          # match the built-in regexes, so the smoke is robust to column-name variants.
+          # Both go end-to-end: ingest writes a manifest -> annotate emits an SFT pair
+          # + annotation_summary.json, wiring the two dataset scripts together on a fresh
+          # checkout.
+          
+          # ---- Variant A: auto-detect columns, audio via unique_id stem scan ----
+          mkdir -p tmp_legacy_test/English/audio
+          python - <<'PY'
+          import struct, wave, math
+          rate = 16000
+          frames = int(rate * 1.2)
+          with wave.open("tmp_legacy_test/English/audio/hello.wav", "wb") as w:
+              w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate)
+              w.writeframes(
+                  b"".join(struct.pack("<h", int(8000*math.sin(2*math.pi*440*i/rate)))
+                            for i in range(frames)))
+          TAB = chr(9)
+          NL = chr(10)
+          (open("tmp_legacy_test/English/meta_file.tsv", "w", encoding="utf-8")
+               .write("uniq_id" + TAB + "transcrip_text" + NL
+                       + "hello" + TAB + "rabbit" + NL))
+          PY
+          python backend/scripts/ingest_indicvoices.py \
+              --source tmp_legacy_test \
+              --output-dir tmp_legacy_ingest --languages en-In
+          python -m pytest -o pythonpath=. backend/tests/test_annotate_pairs.py -q
+          python backend/scripts/annotate_pairs.py \
+              --dataset-dir tmp_legacy_ingest \
+              --output-dir tmp_legacy_sft --correct-frac 0.0 --seed 1
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          pairs_dir = Path("tmp_legacy_sft")
+          pairs = sorted(pairs_dir.glob("phonetics_pairs_en-In_*.jsonl"))
+          assert len(pairs) == 1, f"expected 1 SFT pair file, got {pairs}"
+          summary = pairs_dir / "annotation_summary.json"
+          assert summary.exists(), summary
+          rows = [json.loads(l) for l in pairs[0].read_text(encoding="utf-8").splitlines() if l.strip()]
+          assert len(rows) == 1, f"expected 1 SFT pair, got {len(rows)}"
+          rec = rows[0]
+          assert set(rec) >= {"instruction", "input", "output"}
+          assert rec["meta"]["language"] == "en-In"
+          assert rec["meta"]["error_mode"] == "error"
+          assert rec["meta"]["injected"] == ["gliding_r"]
+          s = json.loads(summary.read_text(encoding="utf-8"))
+          assert s["dry_run"] is False
+          assert sum(v for k, v in s["totals"].items() if k.startswith("en-In:")) == 1
+          assert s["modes"]["en-In:error_mode"] == 1
+          assert s["error_type_coverage"]
+          PY
+          
+          # ---- Variant B: explicit --id-col / --text-col / --audio-col overrides ----
+          # Column names here (utt_id / content / sound_path) do NOT match the built-in
+          # auto-detection regexes, so all three roles are resolved only via the CLI
+          # overrides; the audio column also exercises explicit audio-path resolution
+          # (not unique_id stem scan), making the smoke robust to column-name variants.
+          rm -rf tmp_legacy_test
+          mkdir -p tmp_legacy_test/English/audio
+          python - <<'PY'
+          import struct, wave, math
+          rate = 16000
+          frames = int(rate * 1.2)
+          with wave.open("tmp_legacy_test/English/audio/hello.wav", "wb") as w:
+              w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate)
+              w.writeframes(
+                  b"".join(struct.pack("<h", int(8000*math.sin(2*math.pi*440*i/rate)))
+                            for i in range(frames)))
+          TAB = chr(9)
+          NL = chr(10)
+          (open("tmp_legacy_test/English/meta_file.tsv", "w", encoding="utf-8")
+               .write("utt_id" + TAB + "content" + TAB + "sound_path" + NL
+                       + "utt001" + TAB + "rabbit" + TAB + "audio/hello.wav" + NL))
+          PY
+          python backend/scripts/ingest_indicvoices.py \
+              --source tmp_legacy_test \
+              --output-dir tmp_legacy_ingest_b --languages en-In \
+              --id-col utt_id --text-col content --audio-col sound_path
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          d = Path("tmp_legacy_ingest_b")
+          mans = [p for p in sorted(d.glob("manifest_en-In_*.jsonl")) if p.stat().st_size > 0]
+          assert len(mans) == 1, f"expected 1 non-empty manifest, got {mans}"
+          rec = json.loads(mans[0].read_text(encoding="utf-8").splitlines()[0])
+          assert set(rec) >= {"audio_filepath", "text", "language", "source"}
+          assert rec["language"] == "en-In" and rec["text"] == "rabbit"
+          assert rec["audio_filepath"].endswith("hello.wav")
+          PY
+          python -m pytest -o pythonpath=. backend/tests/test_annotate_pairs.py -q
+          python backend/scripts/annotate_pairs.py \
+              --dataset-dir tmp_legacy_ingest_b \
+              --output-dir tmp_legacy_sft_b --correct-frac 0.0 --seed 1
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          pairs_dir = Path("tmp_legacy_sft_b")
+          pairs = sorted(pairs_dir.glob("phonetics_pairs_en-In_*.jsonl"))
+          assert len(pairs) == 1, f"expected 1 SFT pair file, got {pairs}"
+          summary = pairs_dir / "annotation_summary.json"
+          assert summary.exists(), summary
+          rows = [json.loads(l) for l in pairs[0].read_text(encoding="utf-8").splitlines() if l.strip()]
+          assert len(rows) == 1, f"expected 1 SFT pair, got {len(rows)}"
+          rec = rows[0]
+          assert set(rec) >= {"instruction", "input", "output"}
+          assert rec["meta"]["language"] == "en-In"
+          assert rec["meta"]["error_mode"] == "error"
+          assert rec["meta"]["injected"] == ["gliding_r"]
+          s = json.loads(summary.read_text(encoding="utf-8"))
+          assert s["dry_run"] is False
+          assert sum(v for k, v in s["totals"].items() if k.startswith("en-In:")) == 1
+          assert s["modes"]["en-In:error_mode"] == 1
+          assert s["error_type_coverage"]
+          PY
+          
+          # ---- cleanup ----
+          rm -rf tmp_legacy_test tmp_legacy_ingest tmp_legacy_sft tmp_legacy_ingest_b tmp_legacy_sft_b
   backend-tests:
     name: Backend Test Suite & Health Check
     runs-on: ubuntu-latest
