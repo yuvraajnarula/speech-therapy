@@ -6,6 +6,7 @@ __pycache__
 .env
 node_modules
 *.db
+dataset/
 frontend/test-results/
 frontend/playwright-report/
 frontend/dist/
